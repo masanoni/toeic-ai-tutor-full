@@ -31,8 +31,10 @@ const UserManualScreen: React.FC<UserManualScreenProps> = ({ onGoHome }) => {
 
         <Section title="1. APIキーの設定方法">
           <ol className="list-decimal list-inside space-y-2">
-            <li>Google AI Studioにアクセスし、Googleアカウントでログインします。</li>
-            <li>「Get API key」をクリックし、新しいAPIキーを作成します。</li>
+            <li>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Google AI Studioにアクセス</a>し、Googleアカウントでログインします。
+            </li>
+            <li>「Get API key」または「Create API key」をクリックし、新しいAPIキーを作成します。</li>
             <li>作成したAPIキーをコピーし、アプリのホーム画面にある「API Key Setup」セクションに貼り付け、「Save & Initialize」ボタンを押してください。</li>
             <li className="font-semibold text-slate-700">キーはあなたのデバイス（ブラウザ）にのみ保存され、外部のサーバーに送信されることはありませんのでご安心ください。</li>
           </ol>
@@ -53,7 +55,7 @@ const UserManualScreen: React.FC<UserManualScreenProps> = ({ onGoHome }) => {
             <p><strong>単語リストの閲覧:</strong> データベースに保存されている単語・熟語を一覧で確認できます。レベル、カテゴリ、品詞などで絞り込んだり、キーワードで検索したりすることが可能です。</p>
             <p>
               <strong>単語・熟語のインポート:</strong> 自分で用意したJSONファイルを読み込み、学習用の単語・熟語をデータベースに追加できます。これにより、市販の単語帳のデータを自作して取り込むなど、柔軟な学習が可能です。<br/>
-              <span className="text-sm font-semibold text-slate-700">※JSONファイルは `{"vocabulary": [...]}` という形式で、配列内に指定のフォーマットの単語オブジェクトを入れてください。</span>
+              <span className="text-sm font-semibold text-slate-700">※JSONファイルは `&#123;"vocabulary": [...]&#125;` という形式で、配列内に指定のフォーマットの単語オブジェクトを入れてください。</span>
             </p>
         </Section>
 
