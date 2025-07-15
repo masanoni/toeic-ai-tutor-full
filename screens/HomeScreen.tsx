@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Level, VocabDBItem, PartOfSpeech } from '../types';
 import { GENERATOR_LEVELS, ALL_LEVELS } from '../constants';
@@ -14,6 +13,8 @@ import SettingsIcon from '../components/icons/SettingsIcon';
 import InstallPwaInstructions from '../components/InstallPwaInstructions';
 import { setApiKey as setGeminiApiKey } from '../services/geminiService';
 import { addVocabularyItems } from '../db';
+import ManualIcon from '../components/icons/ManualIcon';
+
 
 interface HomeScreenProps {
   onStartVocabulary: (level: Level) => void;
@@ -25,6 +26,7 @@ interface HomeScreenProps {
   onStartBasicGrammar: () => void;
   onStartGrammarCheck: () => void;
   onGoToAdmin: () => void;
+  onGoToUserManual: () => void;
   dbWordCount: number;
   isInitializing: boolean;
   initStatus: string;
@@ -44,6 +46,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     onStartBasicGrammar,
     onStartGrammarCheck,
     onGoToAdmin,
+    onGoToUserManual,
     dbWordCount, 
     isInitializing, 
     initStatus,
@@ -190,11 +193,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               <h2 className="text-xl font-bold mb-3 flex items-center gap-2 justify-center">
                   API Key Setup
               </h2>
-              <p className="text-slate-400 mb-4 text-sm">
-                  {isApiKeySet 
-                      ? 'Your Google Gemini API Key is set.'
-                      : 'Please enter your Google Gemini API Key. Your key is stored locally and never sent to our servers.'
-                  }
+              <p className="text-slate-400 mb-4 text-sm text-center leading-relaxed">
+                {isApiKeySet
+                  ? 'APIキーは設定済みです。'
+                  : (
+                    <>
+                      AI機能を利用するには、Google Gemini APIキーが必要です。
+                      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline font-semibold block my-2">
+                        Google AI StudioでAPIキーを取得
+                      </a>
+                      取得したキーを下の入力欄に貼り付けて保存してください。キーはあなたのデバイス（ブラウザ）にのみ保存されます。
+                    </>
+                  )
+                }
               </p>
               <div className="flex items-stretch gap-2 mb-3">
                   <input
@@ -237,89 +248,105 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-4">
-      <InstallPwaInstructions />
-      <div className="w-full max-w-2xl text-center">
-        <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-2">TOEIC AI Tutor</h1>
-        <p className="text-lg text-slate-600 mb-8">Your personal AI-powered TOEIC study partner.</p>
-
-        {renderApiKeySection()}
-        
-        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg w-full mb-8">
-          <div className="mb-6">
-            <label htmlFor="level-select" className="block text-xl font-medium text-slate-700 mb-3">
-              1. Choose Your Level
-            </label>
-            <select
-              id="level-select"
-              value={selectedLevel}
-              onChange={(e) => setSelectedLevel(e.target.value as Level)}
-              className="w-full p-4 border border-slate-300 rounded-lg bg-slate-50 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+      <div className="w-full max-w-2xl">
+        <InstallPwaInstructions />
+        <div className="w-full flex justify-end mb-4">
+            <button 
+                onClick={onGoToUserManual}
+                className="bg-white text-slate-600 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-slate-100 transition flex items-center gap-2 border border-slate-200"
             >
-              {GENERATOR_LEVELS.filter(l => l !== ALL_LEVELS).map((level) => (
-                <option key={level} value={level}>{level}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-medium text-slate-700 mb-4">2. Choose Your Mode</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <button onClick={() => onStartVocabulary(selectedLevel)} className="bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-blue-700 transition-transform transform hover:scale-105 shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1" disabled={!isDbReady} title={!isDbReady ? dbDisabledTitle : ''}><LayersIcon className="w-7 h-7 mb-1"/>Vocabulary & Idioms</button>
-              <button onClick={onStartBasicGrammar} className="bg-rose-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-rose-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ""}><BookIcon className="w-7 h-7 mb-1"/>基礎文法</button>
-              <button onClick={onStartGrammarCheck} className="bg-emerald-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-emerald-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ""}><SpellCheckIcon className="w-7 h-7 mb-1"/>AI Grammar Check</button>
-              <button onClick={() => onStartListening(selectedLevel)} className="bg-teal-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-teal-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ''}><HeadphoneIcon className="w-7 h-7 mb-1"/>Listening Practice</button>
-              <button onClick={() => onStartPart5(selectedLevel)} className="bg-amber-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-amber-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ''}><SentenceCompletionIcon className="w-7 h-7 mb-1"/>Part 5: Completion</button>
-              <button onClick={() => onStartPart6(selectedLevel)} className="bg-orange-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-orange-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ''}><TextCompletionIcon className="w-7 h-7 mb-1"/>Part 6: Completion</button>
-              <button onClick={() => onStartReading(selectedLevel)} className="bg-violet-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-violet-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ''}><BookOpenIcon className="w-7 h-7 mb-1"/>Part 7: Reading</button>
-              <button onClick={() => onStartDrive(selectedLevel)} className="bg-sky-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-sky-600 transition-transform transform hover:scale-105 shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1" disabled={!isDbReady} title={!isDbReady ? dbDisabledTitle : ''}><CarIcon className="w-7 h-7 mb-1"/>Vocabulary Drive</button>
-            </div>
-          </div>
+                <ManualIcon className="w-5 h-5"/>
+                ユーザーマニュアル
+            </button>
         </div>
-        
-        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg w-full mb-8">
-            <h2 className="text-xl font-bold text-slate-700 mb-4 text-center">単語管理</h2>
-            <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                    onClick={onViewWordList}
-                    className="flex-1 bg-slate-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-slate-700 transition shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
-                    disabled={!isDbReady}
-                    title={!isDbReady ? dbDisabledTitle : ""}
-                >
-                    単語リストの閲覧
-                </button>
-                <label className={`flex-1 text-white font-bold py-3 px-6 rounded-lg text-lg text-center transition shadow-md ${isInitializing ? 'bg-slate-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'}`}>
-                    単語・熟語のインポート
-                    <input
-                        type="file"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        accept=".json"
-                        disabled={isInitializing}
-                        ref={fileInputRef}
-                    />
-                </label>
-            </div>
-        </div>
+        <div className="w-full text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-2">TOEIC AI Tutor</h1>
+          <p className="text-lg text-slate-600 mb-8">Your personal AI-powered TOEIC study partner.</p>
 
-        {isInitializing && (
-          <div className="bg-white p-6 rounded-2xl shadow-lg w-full mb-8">
-              <h2 className="text-xl font-bold text-slate-700 mb-2">Database Status</h2>
-              <p className="text-blue-600 bg-blue-100 p-3 rounded-md">{initStatus}</p>
-          </div>
-        )}
-        
-        {showAdminButton && (
-          <div className="mt-8">
-              <button
-                  onClick={handleAdminClick}
-                  className="bg-slate-800 text-white font-mono py-2 px-4 rounded-lg hover:bg-slate-900 transition"
+          {renderApiKeySection()}
+          
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg w-full mb-8">
+            <div className="mb-6">
+              <label htmlFor="level-select" className="block text-xl font-medium text-slate-700 mb-3">
+                1. Choose Your Level
+              </label>
+              <select
+                id="level-select"
+                value={selectedLevel}
+                onChange={(e) => setSelectedLevel(e.target.value as Level)}
+                className="w-full p-4 border border-slate-300 rounded-lg bg-slate-50 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               >
-                  &gt; Access Admin Panel
-              </button>
-          </div>
-        )}
+                {GENERATOR_LEVELS.filter(l => l !== ALL_LEVELS).map((level) => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </div>
 
+            <div>
+              <h2 className="text-xl font-medium text-slate-700 mb-4">2. Choose Your Mode</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button onClick={() => onStartVocabulary(selectedLevel)} className="bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-blue-700 transition-transform transform hover:scale-105 shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1" disabled={!isDbReady} title={!isDbReady ? dbDisabledTitle : ''}><LayersIcon className="w-7 h-7 mb-1"/>Vocabulary & Idioms</button>
+                <button onClick={onStartBasicGrammar} className="bg-rose-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-rose-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ""}><BookIcon className="w-7 h-7 mb-1"/>基礎文法</button>
+                <button onClick={onStartGrammarCheck} className="bg-emerald-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-emerald-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ""}><SpellCheckIcon className="w-7 h-7 mb-1"/>AI Grammar Check</button>
+                <button onClick={() => onStartListening(selectedLevel)} className="bg-teal-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-teal-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ''}><HeadphoneIcon className="w-7 h-7 mb-1"/>Listening Practice</button>
+                <button onClick={() => onStartPart5(selectedLevel)} className="bg-amber-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-amber-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ''}><SentenceCompletionIcon className="w-7 h-7 mb-1"/>Part 5: Completion</button>
+                <button onClick={() => onStartPart6(selectedLevel)} className="bg-orange-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-orange-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ''}><TextCompletionIcon className="w-7 h-7 mb-1"/>Part 6: Completion</button>
+                <button onClick={() => onStartReading(selectedLevel)} className="bg-violet-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-violet-600 transition-transform transform hover:scale-105 shadow-md flex flex-col items-center justify-center gap-1 disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={!isAiReady} title={!isAiReady ? aiDisabledTitle : ''}><BookOpenIcon className="w-7 h-7 mb-1"/>Part 7: Reading</button>
+                <button onClick={() => onStartDrive(selectedLevel)} className="bg-sky-500 text-white font-bold py-3 px-4 rounded-lg text-base hover:bg-sky-600 transition-transform transform hover:scale-105 shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-1" disabled={!isDbReady} title={!isDbReady ? dbDisabledTitle : ''}><CarIcon className="w-7 h-7 mb-1"/>Vocabulary Drive</button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg w-full mb-8">
+              <h2 className="text-xl font-bold text-slate-700 mb-4 text-center">単語管理</h2>
+              <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                      onClick={onViewWordList}
+                      className="flex-1 bg-slate-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-slate-700 transition shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+                      disabled={!isDbReady}
+                      title={!isDbReady ? dbDisabledTitle : ""}
+                  >
+                      単語リストの閲覧
+                  </button>
+                  <label className={`flex-1 text-white font-bold py-3 px-6 rounded-lg text-lg text-center transition shadow-md ${isInitializing ? 'bg-slate-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'}`}>
+                      単語・熟語のインポート
+                      <input
+                          type="file"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          accept=".json"
+                          disabled={isInitializing}
+                          ref={fileInputRef}
+                      />
+                  </label>
+              </div>
+          </div>
+
+          {isInitializing && (
+            <div className="bg-white p-6 rounded-2xl shadow-lg w-full mb-8">
+                <h2 className="text-xl font-bold text-slate-700 mb-2">Database Status</h2>
+                <p className="text-blue-600 bg-blue-100 p-3 rounded-md">{initStatus}</p>
+            </div>
+          )}
+          
+          {showAdminButton && (
+            <div className="mt-8">
+                <button
+                    onClick={handleAdminClick}
+                    className="bg-slate-800 text-white font-mono py-2 px-4 rounded-lg hover:bg-slate-900 transition"
+                >
+                    &gt; Access Admin Panel
+                </button>
+            </div>
+          )}
+        </div>
       </div>
+       <footer className="w-full max-w-2xl text-center mt-auto py-6 text-slate-500 text-sm">
+          <p>&copy; {new Date().getFullYear()} TOEIC AI Tutor</p>
+          <a href="mailto:jenseits.von.gut1010@gmail.com" className="hover:text-blue-600 underline">
+              お問い合わせ
+          </a>
+      </footer>
     </div>
   );
 };

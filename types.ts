@@ -11,6 +11,7 @@ export enum Screen {
   BasicGrammar,
   GrammarCheck,
   Admin,
+  UserManual,
 }
 
 export enum Level {

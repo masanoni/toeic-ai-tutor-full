@@ -13,6 +13,7 @@ import WordListScreen from './screens/WordListScreen';
 import BasicGrammarMode from './screens/BasicGrammarMode';
 import GrammarCheckScreen from './screens/GrammarCheckScreen';
 import AdminScreen from './screens/AdminScreen';
+import UserManualScreen from './screens/UserManualScreen';
 import CategorySelectionModal from './components/CategorySelectionModal';
 import ListeningPartSelectionModal from './components/ListeningPartSelectionModal';
 import { getVocabCount, addVocabularyItems, getExistingWords } from './db';
@@ -78,6 +79,10 @@ export const App: React.FC = () => {
     setCurrentScreen(Screen.Home);
     updateWordCount();
   }, [updateWordCount]);
+
+  const handleGoToUserManual = useCallback(() => {
+    setCurrentScreen(Screen.UserManual);
+  }, []);
 
   const handleAiCollection = async (level: Level | typeof ALL_LEVELS, category: VocabCategory | typeof ALL_CATEGORIES, type: VocabType | 'all'): Promise<number> => {
       unlockAudio();
@@ -242,6 +247,8 @@ export const App: React.FC = () => {
             onViewWordList={handleViewWordList}
             onImportJson={updateWordCount}
         />;
+      case Screen.UserManual:
+        return <UserManualScreen onGoHome={handleGoHome} />;
       case Screen.Home:
       default:
         return (
@@ -262,6 +269,7 @@ export const App: React.FC = () => {
             onApiKeyUpdate={setIsApiKeySet}
             onViewWordList={handleViewWordList}
             onImportJson={updateWordCount}
+            onGoToUserManual={handleGoToUserManual}
           />
         );
     }
