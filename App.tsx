@@ -46,36 +46,6 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Effect to re-initialize ad scripts on SPA navigation
-  useEffect(() => {
-    // For AdSense Auto Ads
-    try {
-      if (typeof (window as any).adsbygoogle !== "undefined") {
-        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-      }
-    } catch (e) {
-      console.error("AdSense push error:", e);
-    }
-
-    // For Shinobi Ads, re-inserting the script can force it to re-scan the page
-    const shinobiScriptId = 'shinobi-ad-script';
-    const existingShinobiScript = document.getElementById(shinobiScriptId);
-    if (existingShinobiScript) {
-      existingShinobiScript.remove();
-    }
-    const newShinobiScript = document.createElement('script');
-    newShinobiScript.src = 'https://adm.shinobi.jp/s/aea9a6866fcd0d7f94356d814bf9b31a';
-    newShinobiScript.id = shinobiScriptId;
-    document.body.appendChild(newShinobiScript);
-
-    return () => {
-      const scriptToRemove = document.getElementById(shinobiScriptId);
-      if (scriptToRemove) {
-        scriptToRemove.remove();
-      }
-    };
-  }, [currentScreen]);
-
   const updateWordCount = useCallback(async () => {
     const count = await getVocabCount();
     setDbWordCount(count);
@@ -126,27 +96,22 @@ export const App: React.FC = () => {
       
       const validatedItems: VocabDBItem[] = newItems
         .map((item): Partial<VocabDBItem> => {
-            // Determine the item's type. If we requested 'all', trust the AI's response.
-            // Otherwise, use the type we requested.
             const itemType = type === 'all' ? item.type : type;
 
             const completeItem = {
               ...item,
               level: item.level || (level !== ALL_LEVELS ? level : undefined),
               category: item.category || (category !== ALL_CATEGORIES ? category : undefined),
-              type: itemType, // Use determined type
-              // Set pos to null if it's an idiom, otherwise use what AI provides
+              type: itemType,
               pos: itemType === 'word' ? item.pos : null,
             };
             return completeItem;
         })
         .filter((item): item is VocabDBItem => {
-            // Now, validate the completed item to ensure it's a valid VocabDBItem.
             if (!item.english || !item.japanese || !item.example_en || !item.example_jp || !item.level || !item.category || !item.type) {
               console.warn('Skipping item with missing core data:', item);
               return false;
             }
-            // For words, also validate the part of speech.
             if (item.type === 'word' && (!item.pos || !Object.values(PartOfSpeech).includes(item.pos))) {
                 console.warn('Skipping word with invalid or missing POS:', item);
                 return false;
@@ -223,7 +188,7 @@ export const App: React.FC = () => {
   const handleListeningPartSelected = (part: ListeningPart | 'Random') => {
     setSelectedListeningPart(part);
     setIsListeningPartModalVisible(false);
-    setCategoryModalTarget(Screen.Listening); // Chain to category modal
+    setCategoryModalTarget(Screen.Listening);
   }
 
   const handleViewWordList = () => {
@@ -319,7 +284,7 @@ export const App: React.FC = () => {
           onClose={() => setCategoryModalTarget(null)}
         />
       )}
-      <main className="w-full max-w-4xl mx-auto">
+      <main key={currentScreen} className="w-full max-w-4xl mx-auto">
         {renderScreen()}
       </main>
     </div>
