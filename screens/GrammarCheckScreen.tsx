@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback } from 'react';
 import { GrammarCheckResult } from '../types';
 import { checkGrammar } from '../services/geminiService';
@@ -7,9 +8,10 @@ import SpellCheckIcon from '../components/icons/SpellCheckIcon';
 
 interface GrammarCheckScreenProps {
   onGoHome: () => void;
+  onApiError: (error: unknown) => void;
 }
 
-const GrammarCheckScreen: React.FC<GrammarCheckScreenProps> = ({ onGoHome }) => {
+const GrammarCheckScreen: React.FC<GrammarCheckScreenProps> = ({ onGoHome, onApiError }) => {
   const [inputText, setInputText] = useState('');
   const [result, setResult] = useState<GrammarCheckResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,12 +33,13 @@ const GrammarCheckScreen: React.FC<GrammarCheckScreenProps> = ({ onGoHome }) => 
       }
       setResult(checkResult);
     } catch (e: any) {
+      onApiError(e);
       setError(e.message || "An unexpected error occurred.");
       console.error(e);
     } finally {
       setIsLoading(false);
     }
-  }, [inputText]);
+  }, [inputText, onApiError]);
 
   const handleReset = () => {
     setInputText('');

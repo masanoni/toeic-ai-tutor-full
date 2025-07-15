@@ -7,16 +7,6 @@
     <title>TOEIC AI Tutor</title>
     <meta name="google-site-verification" content="oY-6HuWr8RpI7L_GzlofQ0pf8N8v7YD6aelZ0S59-W0" />
 
-    <!-- PWA Manifest & Theme -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#f1f5f9">
-
-    <!-- iOS PWA Tags -->
-    <link rel="apple-touch-icon" href="/icon-192x192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="TOEIC Tutor">
-
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1428963513287361"
      crossorigin="anonymous"></script>
     <!-- admax -->
@@ -51,16 +41,5 @@
   <body class="bg-slate-50 text-slate-800">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          }).catch(err => {
-            console.log('ServiceWorker registration failed: ', err);
-          });
-        });
-      }
-    </script>
   </body>
 </html>

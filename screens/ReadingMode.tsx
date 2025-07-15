@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Level, VocabCategory, ReadingPassage } from '../types';
 import { generateReadingPassage } from '../services/geminiService';
@@ -9,9 +10,10 @@ interface ReadingModeProps {
   onGoHome: () => void;
   initialCategory: VocabCategory | 'Random';
   level: Level;
+  onApiError: (error: unknown) => void;
 }
 
-const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, level }) => {
+const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, level, onApiError }) => {
   const [passageData, setPassageData] = useState<ReadingPassage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,12 +44,13 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
         setAnswers(new Array(data.questions.length).fill(null));
       }
     } catch (e) {
+      onApiError(e);
       setError("An error occurred while fetching the passage.");
       console.error(e);
     } finally {
       setIsLoading(false);
     }
-  }, [currentLevel, initialCategory]);
+  }, [currentLevel, initialCategory, onApiError]);
 
   useEffect(() => {
     fetchPassage();

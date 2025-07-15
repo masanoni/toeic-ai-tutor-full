@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Level, VocabDBItem, PartOfSpeech } from '../types';
 import { GENERATOR_LEVELS, ALL_LEVELS } from '../constants';
@@ -10,7 +11,6 @@ import BookOpenIcon from '../components/icons/BookOpenIcon';
 import LayersIcon from '../components/icons/LayersIcon';
 import SpellCheckIcon from '../components/icons/SpellCheckIcon';
 import SettingsIcon from '../components/icons/SettingsIcon';
-import InstallPwaInstructions from '../components/InstallPwaInstructions';
 import { setApiKey as setGeminiApiKey } from '../services/geminiService';
 import { addVocabularyItems } from '../db';
 import ManualIcon from '../components/icons/ManualIcon';
@@ -76,7 +76,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     if (key) {
       setApiKeyInput(key);
     }
-  }, []);
+    // Show setup if no key is set, but only after initialization check
+    if (!key && !isInitializing) {
+        setShowApiKeySetup(true);
+    }
+  }, [isInitializing]);
 
   const handleSaveApiKey = () => {
     if (!apiKeyInput.trim()) {
@@ -162,21 +166,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const isDbReady = dbWordCount > 0 && !isInitializing;
   const isAiReady = isApiKeySet && !isInitializing;
-
+    
   const dbDisabledTitle = isInitializing 
     ? "Please wait for initialization to complete." 
     : "Add vocabulary via Import JSON to enable this mode.";
     
   const aiDisabledTitle = isInitializing
     ? "Please wait for initialization to complete."
-    : "Please set your Gemini API Key to use this feature.";
+    : !isApiKeySet ? "Please set your API key to enable AI features." : "";
 
   const renderApiKeySection = () => {
       if (isApiKeySet && !showApiKeySetup) {
           return (
               <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-lg w-full mb-8 border border-slate-700 flex justify-between items-center">
                   <p className="text-slate-300">
-                      <span className="font-bold text-green-400">✓</span> APIキーは設定済みです。
+                      <span className="font-bold text-green-400">✓</span> APIキーが設定されています。
                   </p>
                   <button
                       onClick={() => setShowApiKeySetup(true)}
@@ -194,20 +198,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               <h2 className="text-xl font-bold mb-3 flex items-center gap-2 justify-center">
                   API Key Setup
               </h2>
-              <p className="text-slate-400 mb-4 text-sm text-center leading-relaxed">
-                {isApiKeySet
-                  ? 'APIキーは設定済みです。'
-                  : (
-                    <>
-                      AI機能を利用するには、Google Gemini APIキーが必要です。
-                      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline font-semibold block my-2">
-                        Google AI StudioでAPIキーを取得
-                      </a>
-                      取得したキーを下の入力欄に貼り付けて保存してください。キーはあなたのデバイス（ブラウザ）にのみ保存されます。
-                    </>
-                  )
-                }
-              </p>
+              <div className="text-slate-400 mb-4 text-sm text-center leading-relaxed">
+                <p>
+                  AI機能を利用するにはGoogle Gemini APIキーが必要です。キーは無料で取得できます。
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline font-semibold block my-2">
+                    Google AI Studioで無料APIキーを取得
+                  </a>
+                  キーはあなたのデバイスにのみ保存され、開発者には送信されません。
+                </p>
+              </div>
               <div className="flex items-stretch gap-2 mb-3">
                   <input
                       type={showApiKey ? 'text' : 'password'}
@@ -231,7 +230,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                       className="flex-1 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
                       disabled={!apiKeyInput.trim()}
                   >
-                      Save & Initialize
+                      Save API Key
                   </button>
                   {isApiKeySet && (
                       <button 
@@ -250,7 +249,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-4">
       <div className="w-full max-w-2xl">
-        <InstallPwaInstructions />
         <div className="w-full flex justify-end mb-4">
             <button 
                 onClick={onGoToUserManual}

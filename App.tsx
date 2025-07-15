@@ -74,6 +74,14 @@ export const App: React.FC = () => {
     };
     setupDatabase();
   }, [updateWordCount]);
+  
+  const handleApiError = (error: unknown) => {
+    if (error instanceof Error) {
+        alert(`An API error occurred: ${error.message}`);
+    } else {
+        alert("An unknown API error occurred.");
+    }
+  }
 
   const handleGoHome = useCallback(() => {
     setCurrentScreen(Screen.Home);
@@ -86,54 +94,51 @@ export const App: React.FC = () => {
 
   const handleAiCollection = async (level: Level | typeof ALL_LEVELS, category: VocabCategory | typeof ALL_CATEGORIES, type: VocabType | 'all'): Promise<number> => {
       unlockAudio();
-      if (!isApiKeySet) {
-          alert("Please set your API key on the home screen first.");
-          return 0;
-      }
-      const existingWords = await getExistingWords(level, category, type, 1500);
-      const newItems = await generateVocabulary(level, category, type, existingWords);
-      if (!newItems || newItems.length === 0) return 0;
-      
-      const validatedItems: VocabDBItem[] = newItems
-        .map((item): Partial<VocabDBItem> => {
-            const itemType = type === 'all' ? item.type : type;
+      try {
+        const existingWords = await getExistingWords(level, category, type, 1500);
+        const newItems = await generateVocabulary(level, category, type, existingWords);
+        if (!newItems || newItems.length === 0) return 0;
+        
+        const validatedItems: VocabDBItem[] = newItems
+          .map((item): Partial<VocabDBItem> => {
+              const itemType = type === 'all' ? item.type : type;
 
-            const completeItem = {
-              ...item,
-              level: item.level || (level !== ALL_LEVELS ? level : undefined),
-              category: item.category || (category !== ALL_CATEGORIES ? category : undefined),
-              type: itemType,
-              pos: itemType === 'word' ? item.pos : null,
-            };
-            return completeItem;
-        })
-        .filter((item): item is VocabDBItem => {
-            if (!item.english || !item.japanese || !item.example_en || !item.example_jp || !item.level || !item.category || !item.type) {
-              console.warn('Skipping item with missing core data:', item);
-              return false;
-            }
-            if (item.type === 'word' && (!item.pos || !Object.values(PartOfSpeech).includes(item.pos))) {
-                console.warn('Skipping word with invalid or missing POS:', item);
+              const completeItem = {
+                ...item,
+                level: item.level || (level !== ALL_LEVELS ? level : undefined),
+                category: item.category || (category !== ALL_CATEGORIES ? category : undefined),
+                type: itemType,
+                pos: itemType === 'word' ? item.pos : null,
+              };
+              return completeItem;
+          })
+          .filter((item): item is VocabDBItem => {
+              if (!item.english || !item.japanese || !item.example_en || !item.example_jp || !item.level || !item.category || !item.type) {
+                console.warn('Skipping item with missing core data:', item);
                 return false;
-            }
-            return true;
-        });
+              }
+              if (item.type === 'word' && (!item.pos || !Object.values(PartOfSpeech).includes(item.pos))) {
+                  console.warn('Skipping word with invalid or missing POS:', item);
+                  return false;
+              }
+              return true;
+          });
 
 
-      if (validatedItems.length > 0) {
-        const addedCount = await addVocabularyItems(validatedItems);
-        await updateWordCount();
-        return addedCount;
+        if (validatedItems.length > 0) {
+          const addedCount = await addVocabularyItems(validatedItems);
+          await updateWordCount();
+          return addedCount;
+        }
+        return 0;
+      } catch (error) {
+        handleApiError(error);
+        return 0;
       }
-      return 0;
   };
 
   const handleStart = (screen: Screen, level: Level, isModal: boolean = false) => {
     unlockAudio();
-    if (!isApiKeySet) {
-      alert("Please set your Gemini API Key on the home screen to use this feature.");
-      return;
-    }
     setSelectedLevel(level);
     if (isModal) {
       setCategoryModalTarget(screen);
@@ -160,27 +165,15 @@ export const App: React.FC = () => {
   
   const handleStartBasicGrammar = () => {
     unlockAudio();
-    if (!isApiKeySet) {
-      alert("Please set your Gemini API Key on the home screen to use this feature.");
-      return;
-    }
     setCurrentScreen(Screen.BasicGrammar);
   };
   const handleStartGrammarCheck = () => {
     unlockAudio();
-    if (!isApiKeySet) {
-      alert("Please set your Gemini API Key on the home screen to use this feature.");
-      return;
-    }
     setCurrentScreen(Screen.GrammarCheck);
   };
 
   const handleStartListening = (level: Level) => {
     unlockAudio();
-    if (!isApiKeySet) {
-      alert("Please set your Gemini API Key on the home screen to use this feature.");
-      return;
-    }
     setSelectedLevel(level);
     setIsListeningPartModalVisible(true);
   };
@@ -213,24 +206,24 @@ export const App: React.FC = () => {
       case Screen.Vocabulary:
         return <VocabularyMode level={selectedLevel} onGoHome={handleGoHome} />;
       case Screen.Reading:
-        return <ReadingMode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} />;
+        return <ReadingMode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} onApiError={handleApiError} />;
       case Screen.Drive:
         return <DriveMode level={selectedLevel} onGoHome={handleGoHome} />;
       case Screen.Listening:
         const part = selectedListeningPart === 'Random' 
             ? LISTENING_PARTS[Math.floor(Math.random() * LISTENING_PARTS.length)] 
             : selectedListeningPart;
-        return <ListeningMode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} part={part} />;
+        return <ListeningMode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} part={part} onApiError={handleApiError} />;
       case Screen.Part5:
-        return <Part5Mode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} />;
+        return <Part5Mode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} onApiError={handleApiError} />;
       case Screen.Part6:
-        return <Part6Mode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} />;
+        return <Part6Mode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} onApiError={handleApiError} />;
       case Screen.WordList:
-        return <WordListScreen onGoHome={handleGoHome} />;
+        return <WordListScreen onGoHome={handleGoHome} onApiError={handleApiError} />;
       case Screen.BasicGrammar:
-        return <BasicGrammarMode onGoHome={handleGoHome} />;
+        return <BasicGrammarMode onGoHome={handleGoHome} onApiError={handleApiError} />;
       case Screen.GrammarCheck:
-        return <GrammarCheckScreen onGoHome={handleGoHome} />;
+        return <GrammarCheckScreen onGoHome={handleGoHome} onApiError={handleApiError} />;
       case Screen.Admin:
         return <AdminScreen 
             onGoHome={handleGoHome}

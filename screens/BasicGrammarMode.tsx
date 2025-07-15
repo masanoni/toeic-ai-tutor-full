@@ -6,11 +6,12 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 interface BasicGrammarModeProps {
   onGoHome: () => void;
+  onApiError: (error: unknown) => void;
 }
 
 type Phase = 'selecting' | 'learning' | 'quizzing' | 'results';
 
-const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome }) => {
+const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome, onApiError }) => {
   const [phase, setPhase] = useState<Phase>('selecting');
   
   // State for topic selection
@@ -70,11 +71,12 @@ const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome }) => {
       if (!result) throw new Error("AIから解説を取得できませんでした。");
       setExplanation(result);
     } catch (e: any) {
+      onApiError(e);
       setError(e.message || "解説の生成中にエラーが発生しました。");
     } finally {
       setIsLoading(false);
     }
-  }, [selectedTopics]);
+  }, [selectedTopics, onApiError]);
 
   const handleStartPracticeQuiz = useCallback(async () => {
     if (selectedTopics.size === 0) return;
@@ -93,11 +95,12 @@ const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome }) => {
       setUserAnswers(new Array(result.length).fill(null));
       setCurrentQuizIndex(0);
     } catch (e: any) {
+      onApiError(e);
       setError(e.message || "クイズの生成中にエラーが発生しました。");
     } finally {
       setIsLoading(false);
     }
-  }, [selectedTopics, practiceLevel]);
+  }, [selectedTopics, practiceLevel, onApiError]);
 
   const handleStartQuizAfterLearning = useCallback(async () => {
     if (!learningTopic || !explanation) return;
@@ -113,11 +116,12 @@ const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome }) => {
       setUserAnswers(new Array(result.length).fill(null));
       setCurrentQuizIndex(0);
     } catch (e: any) {
+      onApiError(e);
       setError(e.message || "クイズの生成中にエラーが発生しました。");
     } finally {
       setIsLoading(false);
     }
-  }, [learningTopic, explanation]);
+  }, [learningTopic, explanation, onApiError]);
 
 
   const handleAnswerQuiz = (answerIndex: number) => {

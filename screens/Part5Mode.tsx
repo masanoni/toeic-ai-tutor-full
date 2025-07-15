@@ -9,11 +9,12 @@ interface Part5ModeProps {
   onGoHome: () => void;
   initialCategory: VocabCategory | 'Random';
   level: Level;
+  onApiError: (error: unknown) => void;
 }
 
 type GameState = 'loading' | 'answering' | 'answered';
 
-const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level }) => {
+const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level, onApiError }) => {
   const [exercise, setExercise] = useState<IncompleteSentenceExercise | null>(null);
   const [gameState, setGameState] = useState<GameState>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -38,11 +39,12 @@ const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level 
       setExercise(data);
       setGameState('answering');
     } catch (e: any) {
+      onApiError(e);
       setError(e.message || "An error occurred while fetching the exercise.");
       setGameState('answering');
       console.error(e);
     }
-  }, [currentLevel, initialCategory]);
+  }, [currentLevel, initialCategory, onApiError]);
 
   useEffect(() => {
     fetchExercise();

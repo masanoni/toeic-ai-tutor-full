@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI } from "@google/genai";
 import { 
     ReadingPassage, Level, VocabCategory, VocabType, VocabDBItem, PartOfSpeech,
@@ -10,23 +11,36 @@ import { VOCAB_CATEGORIES, LEVELS, ALL_LEVELS, ALL_CATEGORIES, PARTS_OF_SPEECH, 
 
 let ai: GoogleGenAI | null = null;
 
+const getApiKeyForRequest = (): string => {
+    const userApiKey = localStorage.getItem('gemini-api-key');
+    
+    if (!userApiKey) {
+         throw new Error("API Key has not been set. Please set it on the home screen.");
+    }
+    return userApiKey;
+};
+
+
 export const setApiKey = (key: string) => {
     if (key && key.trim()) {
+        localStorage.setItem('gemini-api-key', key);
         try {
+            // Re-initialize with the new key to confirm it's valid format
             ai = new GoogleGenAI({ apiKey: key });
         } catch (error) {
-            console.error("Failed to initialize GoogleGenAI with the provided key:", error);
-            ai = null;
+             console.error("Failed to initialize GoogleGenAI with the provided key:", error);
+             ai = null;
         }
     } else {
+        localStorage.removeItem('gemini-api-key');
         ai = null;
     }
 };
 
 const getAiClient = (): GoogleGenAI => {
-    if (!ai) {
-        throw new Error("API Key has not been initialized. Please set it on the home screen.");
-    }
+    const apiKey = getApiKeyForRequest();
+    // Always create a new instance to ensure the correct key is used.
+    ai = new GoogleGenAI({ apiKey });
     return ai;
 };
 
@@ -110,7 +124,7 @@ export const generateVocabulary = async (
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: {
                 systemInstruction,
@@ -121,7 +135,7 @@ export const generateVocabulary = async (
         return parseJsonResponse<AIResponseItem[]>(response.text);
     } catch (error) {
         console.error("Error generating vocabulary:", error);
-        return null;
+        throw error;
     }
 };
 
@@ -140,7 +154,7 @@ export const generateReadingPassage = async (level: Level, category: VocabCatego
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: { systemInstruction, responseMimeType: "application/json" },
         });
@@ -148,7 +162,7 @@ export const generateReadingPassage = async (level: Level, category: VocabCatego
         return parseJsonResponse<ReadingPassage>(response.text);
     } catch (error) {
         console.error("Error generating reading passage:", error);
-        return null;
+        throw error;
     }
 };
 
@@ -201,7 +215,7 @@ export const generateListeningExercise = async (part: ListeningPart, level: Leve
     
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: { systemInstruction, responseMimeType: "application/json" },
         });
@@ -209,7 +223,7 @@ export const generateListeningExercise = async (part: ListeningPart, level: Leve
         return parseJsonResponse<ListeningExercise>(response.text);
     } catch (error) {
         console.error(`Error generating listening exercise for ${part}:`, error);
-        return null;
+        throw error;
     }
 };
 
@@ -228,7 +242,7 @@ export const generateIncompleteSentenceExercise = async (level: Level, category:
     
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: { systemInstruction, responseMimeType: "application/json" },
         });
@@ -236,7 +250,7 @@ export const generateIncompleteSentenceExercise = async (level: Level, category:
         return parseJsonResponse<IncompleteSentenceExercise>(response.text);
     } catch (error) {
         console.error("Error generating incomplete sentence exercise:", error);
-        return null;
+        throw error;
     }
 };
 
@@ -252,7 +266,7 @@ export const generateTextCompletionExercise = async (level: Level, category: Voc
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: { systemInstruction, responseMimeType: "application/json" },
         });
@@ -260,7 +274,7 @@ export const generateTextCompletionExercise = async (level: Level, category: Voc
         return parseJsonResponse<TextCompletionExercise>(response.text);
     } catch (error) {
         console.error("Error generating text completion exercise:", error);
-        return null;
+        throw error;
     }
 };
 
@@ -273,13 +287,13 @@ export const generateGrammarExplanation = async (topic: string): Promise<string 
     `;
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
         });
         return response.text;
     } catch (error) {
         console.error(`Error generating grammar explanation for ${topic}:`, error);
-        return null;
+        throw error;
     }
 };
 
@@ -335,14 +349,14 @@ export const generateGrammarQuiz = async (
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: { systemInstruction, responseMimeType: "application/json" },
         });
         return parseJsonResponse<GrammarQuizQuestion[]>(response.text);
     } catch (error) {
         console.error(`Error generating grammar quiz for topics ${topics.join(', ')}:`, error);
-        return null;
+        throw error;
     }
 };
 
@@ -367,7 +381,7 @@ export const checkGrammar = async (sentence: string): Promise<GrammarCheckResult
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: { systemInstruction, responseMimeType: "application/json" },
         });
@@ -375,7 +389,7 @@ export const checkGrammar = async (sentence: string): Promise<GrammarCheckResult
         return parseJsonResponse<GrammarCheckResult>(response.text);
     } catch (error) {
         console.error("Error generating grammar check:", error);
-        return null;
+        throw error;
     }
 };
 
@@ -400,7 +414,7 @@ export const assignFrequencyLevels = async (items: { id: number, type: VocabType
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash",
             contents: prompt,
             config: { systemInstruction, responseMimeType: "application/json" },
         });
@@ -426,6 +440,6 @@ export const assignFrequencyLevels = async (items: { id: number, type: VocabType
 
     } catch (error) {
         console.error("Error assigning frequency levels:", error);
-        return null;
+        throw error;
     }
 };

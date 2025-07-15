@@ -8,9 +8,10 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 interface WordListScreenProps {
   onGoHome: () => void;
+  onApiError: (error: unknown) => void;
 }
 
-const WordListScreen: React.FC<WordListScreenProps> = ({ onGoHome }) => {
+const WordListScreen: React.FC<WordListScreenProps> = ({ onGoHome, onApiError }) => {
   const [items, setItems] = useState<VocabDBItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -172,14 +173,15 @@ const WordListScreen: React.FC<WordListScreenProps> = ({ onGoHome }) => {
         }
         
         setAnalysisStatus(`Analysis complete! Processed ${itemsProcessed} items.`);
-        setIsAnalyzing(false);
         fetchWords(); // Re-fetch the list to show new data
     } catch (e: any) {
+        onApiError(e);
         console.error(e);
         setAnalysisStatus(`Error during analysis: ${e.message}. Process stopped.`);
+    } finally {
         setIsAnalyzing(false);
     }
-  }, [fetchUncategorizedCount, fetchWords]);
+  }, [fetchUncategorizedCount, fetchWords, onApiError]);
 
   const renderFrequency = (level?: number) => {
     if (level === undefined) return <span className="text-slate-400">-</span>;
