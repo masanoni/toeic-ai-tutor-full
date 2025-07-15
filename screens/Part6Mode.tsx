@@ -9,11 +9,12 @@ interface Part6ModeProps {
   onGoHome: () => void;
   initialCategory: VocabCategory | 'Random';
   level: Level;
+  onApiError: (error: unknown) => void;
 }
 
 type GameState = 'loading' | 'answering' | 'answered';
 
-const Part6Mode: React.FC<Part6ModeProps> = ({ onGoHome, initialCategory, level }) => {
+const Part6Mode: React.FC<Part6ModeProps> = ({ onGoHome, initialCategory, level, onApiError }) => {
   const [exercise, setExercise] = useState<TextCompletionExercise | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [gameState, setGameState] = useState<GameState>('loading');
@@ -43,11 +44,12 @@ const Part6Mode: React.FC<Part6ModeProps> = ({ onGoHome, initialCategory, level 
       setAnswers(new Array(data.questions.length).fill(null));
       setGameState('answering');
     } catch (e: any) {
+      onApiError(e);
       setError(e.message || "An error occurred while fetching the exercise.");
       setGameState('answering');
       console.error(e);
     }
-  }, [currentLevel, initialCategory]);
+  }, [currentLevel, initialCategory, onApiError]);
 
   useEffect(() => {
     fetchExercise();

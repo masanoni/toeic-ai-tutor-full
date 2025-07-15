@@ -19,7 +19,7 @@ interface ListeningModeProps {
 
 type GameState = 'loading' | 'ready' | 'listening' | 'answering' | 'answered';
 
-const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialCategory, level, part, onApiError }) => {
+export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialCategory, level, part, onApiError }) => {
   const [exercise, setExercise] = useState<ListeningExercise | null>(null);
   const [gameState, setGameState] = useState<GameState>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -212,4 +212,17 @@ const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialCategory
       
         <div className="mb-6 p-4 bg-white rounded-lg shadow-md flex gap-4 justify-center items-center">
             <div className="flex items-center gap-2">
-                <label className="font-semibold text-slate
+                <label className="font-semibold text-slate-600">Level:</label>
+                <select value={currentLevel} onChange={e => setCurrentLevel(e.target.value as Level)} className="p-2 border rounded-md bg-white text-slate-800 focus:ring-2 focus:ring-blue-500" disabled={gameState === 'loading' || isSpeaking}>
+                    {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+            </div>
+             <button onClick={fetchExercise} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition" disabled={gameState === 'loading' || isSpeaking}>
+                New Exercise
+            </button>
+        </div>
+        
+        {renderContent()}
+    </div>
+  );
+};

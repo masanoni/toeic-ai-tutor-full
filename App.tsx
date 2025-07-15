@@ -6,7 +6,7 @@ import HomeScreen from './screens/HomeScreen';
 import VocabularyMode from './screens/VocabularyMode';
 import ReadingMode from './screens/ReadingMode';
 import DriveMode from './screens/DriveMode';
-import ListeningMode from './screens/ListeningMode';
+import { ListeningMode } from './screens/ListeningMode';
 import Part5Mode from './screens/Part5Mode';
 import Part6Mode from './screens/Part6Mode';
 import WordListScreen from './screens/WordListScreen';
