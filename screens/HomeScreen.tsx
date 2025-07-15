@@ -14,6 +14,7 @@ import InstallPwaInstructions from '../components/InstallPwaInstructions';
 import { setApiKey as setGeminiApiKey } from '../services/geminiService';
 import { addVocabularyItems } from '../db';
 import ManualIcon from '../components/icons/ManualIcon';
+import AdComponent from '../components/AdComponent';
 
 
 interface HomeScreenProps {
@@ -351,6 +352,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           )}
         </div>
       </div>
+      <AdComponent />
        <footer className="w-full max-w-2xl text-center mt-auto py-6 text-slate-500 text-sm">
           <p>&copy; {new Date().getFullYear()} TOEIC AI Tutor</p>
           <a href="mailto:jenseits.von.gut1010@gmail.com" className="hover:text-blue-600 underline">
