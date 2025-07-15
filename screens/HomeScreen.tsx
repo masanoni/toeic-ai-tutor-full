@@ -298,17 +298,27 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
           
           <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg w-full mb-8">
-              <h2 className="text-xl font-bold text-slate-700 mb-4 text-center">単語管理</h2>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex justify-between items-baseline mb-4">
+                <h2 className="text-xl font-bold text-slate-700">単語管理</h2>
+                <a
+                    href="https://note.com/degu_masa/n/nf13fc397a9b2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                    データセットの購入はこちら &rarr;
+                </a>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                       onClick={onViewWordList}
-                      className="flex-1 bg-slate-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-slate-700 transition shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+                      className="bg-slate-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-slate-700 transition shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
                       disabled={!isDbReady}
                       title={!isDbReady ? dbDisabledTitle : ""}
                   >
                       単語リストの閲覧
                   </button>
-                  <label className={`flex-1 text-white font-bold py-3 px-6 rounded-lg text-lg text-center transition shadow-md ${isInitializing ? 'bg-slate-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'}`}>
+                  <label className={`text-white font-bold py-3 px-6 rounded-lg text-lg text-center transition shadow-md flex items-center justify-center ${isInitializing ? 'bg-slate-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'}`}>
                       単語・熟語のインポート
                       <input
                           type="file"
