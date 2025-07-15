@@ -46,6 +46,36 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Effect to re-initialize ad scripts on SPA navigation
+  useEffect(() => {
+    // For AdSense Auto Ads
+    try {
+      if (typeof (window as any).adsbygoogle !== "undefined") {
+        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+      }
+    } catch (e) {
+      console.error("AdSense push error:", e);
+    }
+
+    // For Shinobi Ads, re-inserting the script can force it to re-scan the page
+    const shinobiScriptId = 'shinobi-ad-script';
+    const existingShinobiScript = document.getElementById(shinobiScriptId);
+    if (existingShinobiScript) {
+      existingShinobiScript.remove();
+    }
+    const newShinobiScript = document.createElement('script');
+    newShinobiScript.src = 'https://adm.shinobi.jp/s/aea9a6866fcd0d7f94356d814bf9b31a';
+    newShinobiScript.id = shinobiScriptId;
+    document.body.appendChild(newShinobiScript);
+
+    return () => {
+      const scriptToRemove = document.getElementById(shinobiScriptId);
+      if (scriptToRemove) {
+        scriptToRemove.remove();
+      }
+    };
+  }, [currentScreen]);
+
   const updateWordCount = useCallback(async () => {
     const count = await getVocabCount();
     setDbWordCount(count);
