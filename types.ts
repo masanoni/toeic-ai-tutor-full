@@ -107,7 +107,6 @@ export interface ListeningQuestion {
     options: ListeningOption[];
     correctOptionIndex: number;
     explanation: string;
-    refersToGraphic?: boolean;
 }
 
 export interface ConversationExercise extends ListeningPassage, ListeningQuestion {
@@ -158,8 +157,8 @@ export interface GrammarCheckResult {
 
 export interface PhotoDescriptionExercise {
     part: 'Part 1';
-    sceneDescription: string;
-    scenePrompt: string;
+    image_base64: string;
+    imagePrompt: string;
     options: string[]; // 4 options
     correctOptionIndex: number;
     explanation: string;
@@ -170,7 +169,6 @@ export interface MockTestConversation {
     passage: Sentence[];
     title: string;
     questions: ListeningQuestion[]; // 3 questions per conversation/talk
-    graphic?: string; // For text-based graphics like schedules, maps
 }
 
 export interface Part7Passage {
@@ -221,7 +219,7 @@ export interface MockTest {
     createdAt: number; // Timestamp
     level: Level | 'Slightly Harder';
     content: MockTestContent;
-    scenePrompts?: string[];
+    imagePrompts?: string[];
     status: 'generating' | 'complete' | 'failed';
     advice: string;
     attempts: MockTestAttempt[];

@@ -19,7 +19,7 @@ import MockTestMode from './screens/MockTestMode';
 import CategorySelectionModal from './components/CategorySelectionModal';
 import ListeningPartSelectionModal from './components/ListeningPartSelectionModal';
 import { getVocabCount, addVocabularyItems, getExistingWords } from './db';
-import { generateVocabulary } from './services/geminiService';
+import { generateVocabulary, setApiKey as setGeminiApiKey } from './services/geminiService';
 import { useAudioUnlock } from './hooks/useAudioUnlock';
 import { INITIAL_VOCAB_DATA } from './data/initial-vocab.data';
 
@@ -30,6 +30,7 @@ export const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initStatus, setInitStatus] = useState('Initializing...');
   const [dbWordCount, setDbWordCount] = useState(0);
+  const [isApiKeySet, setIsApiKeySet] = useState(false);
 
   const [categoryModalTarget, setCategoryModalTarget] = useState<Screen | null>(null);
   const [isListeningPartModalVisible, setIsListeningPartModalVisible] = useState(false);
@@ -38,6 +39,14 @@ export const App: React.FC = () => {
   const [selectedListeningPart, setSelectedListeningPart] = useState<ListeningPart | 'Random'>('Random');
   
   const { unlockAudio } = useAudioUnlock();
+
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem('gemini-api-key');
+    if (storedApiKey) {
+        setGeminiApiKey(storedApiKey);
+        setIsApiKeySet(true);
+    }
+  }, []);
 
   const updateWordCount = useCallback(async () => {
     const count = await getVocabCount();
@@ -231,6 +240,7 @@ export const App: React.FC = () => {
             dbWordCount={dbWordCount}
             isInitializing={isInitializing}
             initStatus={initStatus}
+            isApiKeySet={isApiKeySet}
             onViewWordList={handleViewWordList}
             onImportJson={updateWordCount}
         />;
@@ -253,6 +263,8 @@ export const App: React.FC = () => {
             dbWordCount={dbWordCount}
             isInitializing={isInitializing}
             initStatus={initStatus}
+            isApiKeySet={isApiKeySet}
+            onApiKeyUpdate={setIsApiKeySet}
             onViewWordList={handleViewWordList}
             onImportJson={updateWordCount}
             onGoToUserManual={handleGoToUserManual}

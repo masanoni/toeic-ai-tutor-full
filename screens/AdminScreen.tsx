@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Level, VocabCategory, VocabType, VocabDBItem } from '../types';
 import { GENERATOR_LEVELS, GENERATOR_CATEGORIES, ALL_LEVELS, ALL_CATEGORIES } from '../constants';
@@ -12,6 +11,7 @@ interface AdminScreenProps {
   dbWordCount: number;
   isInitializing: boolean;
   initStatus: string;
+  isApiKeySet: boolean;
   onViewWordList: () => void;
   onImportJson: () => Promise<any>;
 }
@@ -22,6 +22,7 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
   dbWordCount,
   isInitializing,
   initStatus,
+  isApiKeySet,
   onViewWordList,
   onImportJson,
 }) => {
@@ -118,8 +119,8 @@ const AdminScreen: React.FC<AdminScreenProps> = ({
                     title="Number of batches (75 items per batch)"
                 />
             </div>
-             <button onClick={handleAiCollectClick} className="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-indigo-700 transition shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={isCollecting || isInitializing}>
-                {isCollecting ? <LoadingSpinner /> : `Generate ${batchCount * 75} New Items`}
+             <button onClick={handleAiCollectClick} className="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-indigo-700 transition shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed" disabled={isCollecting || isInitializing || !isApiKeySet}>
+                {isCollecting ? <LoadingSpinner /> : !isApiKeySet ? 'Set API Key to Generate' : `Generate ${batchCount * 75} New Items`}
             </button>
             {collectStatus && <p className="text-sm text-slate-600 mt-3">{collectStatus}</p>}
         </div>
