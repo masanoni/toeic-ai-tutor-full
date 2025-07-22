@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Sentence } from '../types';
 import CloseIcon from './icons/CloseIcon';
@@ -20,7 +21,7 @@ const ScriptModal: React.FC<ScriptModalProps> = ({ passage, title, onClose }) =>
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-4 border-b border-slate-200 flex-shrink-0">
-          <h2 className="text-xl font-bold text-slate-800">{title} - Full Script</h2>
+          <h2 className="text-xl font-bold text-slate-800">{title} - 全文スクリプト</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-800">
             <CloseIcon className="w-7 h-7" />
           </button>
@@ -38,7 +39,7 @@ const ScriptModal: React.FC<ScriptModalProps> = ({ passage, title, onClose }) =>
                 onClick={onClose} 
                 className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition"
             >
-                Close
+                閉じる
             </button>
         </div>
       </div>

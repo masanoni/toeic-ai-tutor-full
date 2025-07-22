@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Level, VocabCategory, IncompleteSentenceExercise } from '../types';
 import { generateIncompleteSentenceExercise } from '../services/geminiService';
@@ -34,13 +35,13 @@ const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level,
 
       const data = await generateIncompleteSentenceExercise(currentLevel, categoryToFetch);
       if (!data || !data.options || data.options.length !== 4) {
-        throw new Error("AI failed to generate a valid exercise. Please try again.");
+        throw new Error("AIが有効な問題を生成できませんでした。もう一度お試しください。");
       }
       setExercise(data);
       setGameState('answering');
     } catch (e: any) {
       onApiError(e);
-      setError(e.message || "An error occurred while fetching the exercise.");
+      setError(e.message || "問題の取得中にエラーが発生しました。");
       setGameState('answering');
       console.error(e);
     }
@@ -59,7 +60,7 @@ const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level,
   const renderContent = () => {
     if (gameState === 'loading') return <LoadingSpinner />;
     if (error) return <p className="text-center text-red-500 bg-red-100 p-4 rounded-lg">{error}</p>;
-    if (!exercise) return <p className="text-center text-slate-500">No exercise loaded.</p>;
+    if (!exercise) return <p className="text-center text-slate-500">問題が読み込まれていません。</p>;
 
     const isCorrect = selectedAnswerIndex === exercise.correctOptionIndex;
     
@@ -101,13 +102,13 @@ const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level,
             {gameState === 'answered' && (
                  <div className="w-full mt-6 space-y-4">
                     <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-                        <h3 className={`text-xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>{isCorrect ? "Correct! (正解)" : "Incorrect (不正解)"}</h3>
-                        <p className="font-bold text-slate-700 mt-3">解説 (Explanation):</p>
+                        <h3 className={`text-xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>{isCorrect ? "正解" : "不正解"}</h3>
+                        <p className="font-bold text-slate-700 mt-3">解説:</p>
                         <p className="text-slate-700 whitespace-pre-wrap">{exercise.explanation_jp}</p>
                     </div>
                     
                     <button onClick={fetchExercise} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition">
-                        Next Question
+                        次の問題へ
                     </button>
                 </div>
             )}
@@ -118,20 +119,20 @@ const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level,
   return (
     <div className="w-full max-w-3xl mx-auto p-4">
         <div className="flex justify-between items-center mb-6">
-            <button onClick={onGoHome} className="text-blue-600 hover:text-blue-800">&larr; Back to Home</button>
-            <h1 className="text-2xl font-bold text-slate-800">Part 5: Sentence Completion</h1>
+            <button onClick={onGoHome} className="text-blue-600 hover:text-blue-800">&larr; ホームに戻る</button>
+            <h1 className="text-2xl font-bold text-slate-800">パート5: 短文穴埋め問題</h1>
             <div/>
         </div>
       
         <div className="mb-6 p-4 bg-white rounded-lg shadow-md flex gap-4 justify-center items-center">
             <div className="flex items-center gap-2">
-                <label className="font-semibold text-slate-600">Level:</label>
+                <label className="font-semibold text-slate-600">レベル:</label>
                 <select value={currentLevel} onChange={e => setCurrentLevel(e.target.value as Level)} className="p-2 border rounded-md bg-white text-slate-800 focus:ring-2 focus:ring-blue-500" disabled={gameState === 'loading'}>
                     {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
             </div>
             <button onClick={fetchExercise} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition" disabled={gameState === 'loading'}>
-                New Question
+                新しい問題
             </button>
         </div>
 

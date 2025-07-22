@@ -1,13 +1,15 @@
 
+
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { VocabDBItem, Level, VocabCategory, VocabType, PartOfSpeech, SortOrder } from './types';
+import type { VocabDBItem, Level, VocabCategory, VocabType, PartOfSpeech, SortOrder, MockTest } from './types';
 import { ALL_LEVELS, ALL_CATEGORIES, PARTS_OF_SPEECH } from './constants';
 
 
 const DB_NAME = 'TOEICAI_TUTOR_DB';
-const DB_VERSION = 5; 
+const DB_VERSION = 7; 
 const WORDS_STORE_NAME = 'words';
 const IDIOMS_STORE_NAME = 'idioms';
+const MOCK_TESTS_STORE_NAME = 'mockTests';
 const OLD_VOCAB_STORE_NAME = 'vocabulary';
 
 
@@ -29,6 +31,11 @@ interface TOEICDB extends DBSchema {
       'level_category': [Level, VocabCategory];
       'frequencyLevel': number;
     };
+  };
+   [MOCK_TESTS_STORE_NAME]: {
+    key: number;
+    value: MockTest;
+    indexes: { 'createdAt': number; 'status': string; };
   };
   // For migration purposes, the old store might exist temporarily
   [OLD_VOCAB_STORE_NAME]?: {
@@ -95,6 +102,20 @@ const getDb = (): Promise<IDBPDatabase<TOEICDB>> => {
                     const idiomsStore = tx.objectStore(IDIOMS_STORE_NAME);
                     if (!idiomsStore.indexNames.contains('frequencyLevel')) {
                         idiomsStore.createIndex('frequencyLevel', 'frequencyLevel', { unique: false });
+                    }
+                }
+                if (oldVersion < 6) {
+                    console.log("Applying version 6 upgrade: Adding mockTests store.");
+                    if (!db.objectStoreNames.contains(MOCK_TESTS_STORE_NAME)) {
+                        const store = db.createObjectStore(MOCK_TESTS_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+                }
+                if (oldVersion < 7) {
+                    console.log("Applying version 7 upgrade: Adding status index to mockTests store.");
+                    const store = tx.objectStore(MOCK_TESTS_STORE_NAME);
+                    if (!store.indexNames.contains('status')) {
+                        store.createIndex('status', 'status', { unique: false });
                     }
                 }
             },
@@ -357,4 +378,34 @@ export const updateFrequencyLevels = async (updates: { id: number; type: VocabTy
     }));
     
     await tx.done;
+};
+
+// --- Mock Test DB Functions ---
+
+export const addMockTest = async (test: Omit<MockTest, 'id'>): Promise<number> => {
+    const db = await getDb();
+    return db.add(MOCK_TESTS_STORE_NAME, test as MockTest);
+};
+
+export const getAllMockTests = async (): Promise<MockTest[]> => {
+    const db = await getDb();
+    return db.getAllFromIndex(MOCK_TESTS_STORE_NAME, 'createdAt');
+};
+
+export const getMockTest = async (id: number): Promise<MockTest | undefined> => {
+    const db = await getDb();
+    return db.get(MOCK_TESTS_STORE_NAME, id);
+};
+
+export const updateMockTest = async (test: MockTest): Promise<void> => {
+    if (!test.id) {
+        throw new Error("Cannot update a mock test without an ID.");
+    }
+    const db = await getDb();
+    await db.put(MOCK_TESTS_STORE_NAME, test);
+};
+
+export const deleteMockTest = async (id: number): Promise<void> => {
+    const db = await getDb();
+    await db.delete(MOCK_TESTS_STORE_NAME, id);
 };

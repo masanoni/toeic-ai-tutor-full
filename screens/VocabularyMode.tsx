@@ -70,16 +70,16 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
     try {
       const items = await getVocabulary(level, category, vocabSelection, posFilter, sortOrder, 30, frequencyLevel);
       if (items.length < 4 && (studyMode === 'en-jp-quiz' || studyMode === 'jp-en-quiz')) {
-         setError("Not enough vocabulary for a quiz. Need at least 4 items. Try changing filters or adding more words.");
+         setError("クイズ用の単語が足りません（最低4つ必要です）。フィルターを変更するか、単語を追加してください。");
          setVocabList([]);
       } else if (items.length === 0) {
-        setError("No vocabulary found for this selection. Try changing the category or filters, or wait for the database to populate more words.");
+        setError("この条件に一致する単語が見つかりませんでした。カテゴリやフィルターを変更するか、データベースに単語が追加されるのをお待ちください。");
         setVocabList([]);
       } else {
         setVocabList(items);
       }
     } catch (e) {
-      setError("An error occurred while fetching vocabulary from the local database.");
+      setError("ローカルデータベースからの語彙の取得中にエラーが発生しました。");
       console.error(e);
     } finally {
       setIsLoading(false);
@@ -87,8 +87,6 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
   }, [level, category, vocabSelection, posFilter, sortOrder, studyMode, frequencyLevel]);
 
   useEffect(() => {
-    // Only fetch from DB if we are in 'db' mode.
-    // This will also trigger when switching back from 'file' mode.
     if (sessionSource === 'db') {
       fetchVocabFromDB();
     }
@@ -116,7 +114,6 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
       if (currentIndex < vocabList.length - 1) {
         setCurrentIndex(prev => prev + 1);
       } else {
-        // End of batch, fetch a new one
         fetchVocabFromDB();
       }
     }
@@ -149,10 +146,10 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
     setFeedback(isCorrect ? 'correct' : 'incorrect');
     if (isCorrect) {
         updateLearnedStatus(currentItem.id!, true);
-        try { await speak("Correct!", 'en-US'); setTimeout(handleNext, 1500); } catch (e) { console.error(e); }
+        try { await speak("正解！", 'ja-JP'); setTimeout(handleNext, 1500); } catch (e) { console.error(e); }
     } else {
         updateLearnedStatus(currentItem.id!, false);
-        try { await speak("Try again.", 'en-US'); } catch (e) { console.error(e); }
+        try { await speak("もう一度試してください。", 'ja-JP'); } catch (e) { console.error(e); }
     }
   };
   
@@ -187,7 +184,7 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
   const exportReviewList = () => {
     const reviewItems = vocabList.filter(item => sessionReviewIds.has(item.id!));
     if (reviewItems.length === 0) {
-        alert("No items marked for review in this session.");
+        alert("このセッションで復習にマークされた項目はありません。");
         return;
     }
     const dataStr = JSON.stringify({ vocabulary: reviewItems }, null, 2);
@@ -211,18 +208,17 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
         const data = JSON.parse(text);
 
         if (!data.vocabulary || !Array.isArray(data.vocabulary) || data.vocabulary.length === 0) {
-          alert('Invalid JSON format or empty list. Expected an object with a non-empty "vocabulary" array.');
+          alert('無効なJSON形式または空のリストです。"vocabulary"キーを持つ空でない配列のオブジェクトが必要です。');
           return;
         }
         
         const firstItem = data.vocabulary[0];
         if (!firstItem.english || !firstItem.japanese || !firstItem.example_en) {
-          alert('The items in the vocabulary list seem to be in the wrong format.');
+          alert('語彙リストの項目が不正な形式のようです。');
           return;
         }
         
         stop();
-        // Use a shuffled version of the list for variety each time it's loaded
         setVocabList(shuffleArray(data.vocabulary));
         setSessionSource('file');
         setLoadedFileName(file.name);
@@ -234,7 +230,7 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
         setSessionReviewIds(new Set());
       } catch (error) {
         console.error('Error importing review list:', error);
-        alert('Failed to import review list. Please check the file format and console for errors.');
+        alert('復習リストのインポートに失敗しました。ファイル形式を確認し、コンソールでエラーを確認してください。');
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
@@ -245,8 +241,8 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
   const handleReturnToStandardMode = () => {
     setSessionSource('db');
     setLoadedFileName(null);
-    setVocabList([]); // Clear list immediately
-    setIsLoading(true); // Show loading spinner while fetchVocabFromDB runs
+    setVocabList([]); 
+    setIsLoading(true);
   };
 
   const renderQuizContent = () => {
@@ -260,7 +256,7 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
       <div className="w-full bg-white p-6 rounded-2xl shadow-xl transition-all duration-500">
         <p className="text-right text-slate-500 mb-4">{currentIndex + 1} / {vocabList.length}</p>
         <div className="text-center">
-            <p className="text-sm font-semibold text-slate-500 mb-2">{isEnToJp ? "What is the Japanese meaning of:" : "What is the English word/idiom for:"}</p>
+            <p className="text-sm font-semibold text-slate-500 mb-2">{isEnToJp ? "以下の英単語・熟語の日本語訳は？" : "以下の日本語に対応する英単語・熟語は？"}</p>
             <h2 className="text-3xl font-bold mb-6">{questionText}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -293,8 +289,8 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
                 <p className="text-lg font-bold">{currentItem.english}</p>
                 <p className="text-md text-slate-600">{currentItem.japanese}</p>
                 <div className="mt-3 flex justify-center gap-4">
-                    <button onClick={() => updateLearnedStatus(currentItem.id!, true)} className={`px-3 py-1 text-sm rounded-full ${sessionLearnedIds.has(currentItem.id!) ? 'bg-green-600 text-white' : 'bg-green-200 text-green-800'}`}>I know this 👍</button>
-                    <button onClick={() => updateLearnedStatus(currentItem.id!, false)} className={`px-3 py-1 text-sm rounded-full ${sessionReviewIds.has(currentItem.id!) ? 'bg-red-600 text-white' : 'bg-red-200 text-red-800'}`}>Needs review 👎</button>
+                    <button onClick={() => updateLearnedStatus(currentItem.id!, true)} className={`px-3 py-1 text-sm rounded-full ${sessionLearnedIds.has(currentItem.id!) ? 'bg-green-600 text-white' : 'bg-green-200 text-green-800'}`}>覚えた 👍</button>
+                    <button onClick={() => updateLearnedStatus(currentItem.id!, false)} className={`px-3 py-1 text-sm rounded-full ${sessionReviewIds.has(currentItem.id!) ? 'bg-red-600 text-white' : 'bg-red-200 text-red-800'}`}>要復習 👎</button>
                 </div>
             </div>
         )}
@@ -305,22 +301,22 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
   const renderContent = () => {
     if (isLoading) return <LoadingSpinner />;
     if (error) return <div className="text-center p-8 bg-yellow-100 border border-yellow-300 rounded-lg">
-        <p className="text-yellow-800 font-semibold">Heads up!</p>
+        <p className="text-yellow-800 font-semibold">お知らせ</p>
         <p className="text-yellow-700 mt-2">{error}</p>
         <button onClick={onGoHome} className="mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
-            &larr; Back to Home
+            &larr; ホームに戻る
         </button>
     </div>;
     if (!currentItem) {
         if (sessionSource === 'file') {
             return (
                  <div className="text-center p-8 bg-blue-100 border border-blue-300 rounded-lg">
-                    <p className="text-blue-800 font-semibold">Review list loaded!</p>
-                    <p className="text-blue-700 mt-2">Ready to start your focused review session.</p>
+                    <p className="text-blue-800 font-semibold">復習リストが読み込まれました！</p>
+                    <p className="text-blue-700 mt-2">集中復習セッションを開始する準備ができました。</p>
                 </div>
             );
         }
-        return <p className="text-center text-slate-500">No vocabulary loaded.</p>;
+        return <p className="text-center text-slate-500">単語が読み込まれていません。</p>;
     }
     
     if (studyMode === 'en-jp-quiz' || studyMode === 'jp-en-quiz') {
@@ -328,7 +324,7 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
         <div className="w-full flex flex-col items-center">
           {renderQuizContent()}
            <button onClick={handleNext} className="mt-8 flex items-center gap-2 text-slate-600 font-semibold py-3 px-6 rounded-lg hover:bg-slate-200 transition">
-            { sessionSource === 'file' ? 'Next Word' : 'Next Word/Batch' } <NextIcon />
+            { sessionSource === 'file' ? '次の単語へ' : '次の単語/バッチへ' } <NextIcon />
           </button>
         </div>
       );
@@ -363,7 +359,7 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
                     <p className="text-2xl text-slate-600 mb-4">{currentItem.japanese}</p>
                     <p className="text-lg text-slate-500 mb-6">{currentItem.example_jp}</p>
                      <button onClick={() => speak(currentItem.example_en, 'en-US').catch(error => { if (!(error instanceof SpeechCancellationError)) { console.error('Speech error:', error); } })} disabled={isSpeaking} className="mb-4 text-blue-500 hover:text-blue-700 flex items-center gap-2 mx-auto disabled:text-slate-400">
-                        <SoundIcon className="w-5 h-5"/> Hear Example
+                        <SoundIcon className="w-5 h-5"/> 例文を聞く
                     </button>
                     <form onSubmit={handleWritingSubmit} className="flex flex-col items-center gap-4">
                         <input
@@ -375,20 +371,20 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
                                 feedback === 'incorrect' ? 'border-red-500 bg-red-50' :
                                 'border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                             }`}
-                            placeholder="Type the English word/idiom"
+                            placeholder="英単語・熟語を入力"
                         />
                          <button type="submit" className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-blue-700 transition">
-                            Check
+                            チェック
                         </button>
                     </form>
                     {feedback === 'incorrect' && (
-                        <button onClick={() => setUserInput(currentItem.english)} className="mt-4 text-sm text-slate-500 hover:text-slate-700">Show Answer</button>
+                        <button onClick={() => setUserInput(currentItem.english)} className="mt-4 text-sm text-slate-500 hover:text-slate-700">答えを表示</button>
                     )}
                 </div>
             )}
         </div>
         <button onClick={handleNext} className="mt-8 flex items-center gap-2 text-slate-600 font-semibold py-3 px-6 rounded-lg hover:bg-slate-200 transition">
-           { sessionSource === 'file' ? 'Next Word' : 'Next Word/Batch' } <NextIcon />
+           { sessionSource === 'file' ? '次の単語へ' : '次の単語/バッチへ' } <NextIcon />
         </button>
       </div>
     );
@@ -401,8 +397,8 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
   return (
     <div className="w-full max-w-3xl mx-auto p-4">
         <div className="flex justify-between items-center mb-6">
-            <button onClick={onGoHome} className="text-blue-600 hover:text-blue-800">&larr; Back to Home</button>
-            <h1 className="text-2xl font-bold text-slate-800">Vocabulary Mode</h1>
+            <button onClick={onGoHome} className="text-blue-600 hover:text-blue-800">&larr; ホームに戻る</button>
+            <h1 className="text-2xl font-bold text-slate-800">単語学習モード</h1>
             <div/>
         </div>
 
@@ -410,11 +406,11 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
             {sessionSource === 'file' && (
               <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-2">
                 <div className="text-sm text-indigo-800 text-center sm:text-left">
-                    <p><strong>Review Session Active:</strong></p>
+                    <p><strong>復習セッション中:</strong></p>
                     <p className="font-medium break-all">{loadedFileName}</p>
                 </div>
                 <button onClick={handleReturnToStandardMode} className="bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-600 transition text-sm whitespace-nowrap">
-                    &larr; Return to Standard Mode
+                    &larr; 通常モードに戻る
                 </button>
               </div>
             )}
@@ -422,74 +418,74 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
             <fieldset disabled={sessionSource === 'file' || isLoading} className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm font-semibold text-slate-600">Category:</label>
+                        <label className="text-sm font-semibold text-slate-600">カテゴリ:</label>
                         <select value={category} onChange={e => setCategory(e.target.value as VocabCategory)} className="p-2 border rounded-md bg-slate-50 w-full disabled:opacity-70 disabled:cursor-not-allowed">
                             {VOCAB_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm font-semibold text-slate-600">Practice:</label>
+                        <label className="text-sm font-semibold text-slate-600">練習内容:</label>
                         <select value={vocabSelection} onChange={e => setVocabSelection(e.target.value as VocabSelection)} className="p-2 border rounded-md bg-slate-50 w-full disabled:opacity-70 disabled:cursor-not-allowed">
-                           <option value="word">Words</option>
-                           <option value="idiom">Idioms</option>
-                           <option value="all">All</option>
+                           <option value="word">単語</option>
+                           <option value="idiom">熟語</option>
+                           <option value="all">全て</option>
                         </select>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm font-semibold text-slate-600">Order:</label>
+                        <label className="text-sm font-semibold text-slate-600">順序:</label>
                         <select value={sortOrder} onChange={e => setSortOrder(e.target.value as SortOrder)} className="p-2 border rounded-md bg-slate-50 w-full disabled:opacity-70 disabled:cursor-not-allowed">
-                            <option value="Random">Random</option>
-                            <option value="Alphabetical">Alphabetical</option>
+                            <option value="Random">ランダム</option>
+                            <option value="Alphabetical">アルファベット順</option>
                         </select>
                     </div>
                     {vocabSelection === 'word' && (
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-semibold text-slate-600">Part of Speech:</label>
+                            <label className="text-sm font-semibold text-slate-600">品詞:</label>
                             <select value={posFilter} onChange={e => setPosFilter(e.target.value as PartOfSpeech | 'all')} className="p-2 border rounded-md bg-slate-50 w-full disabled:opacity-70 disabled:cursor-not-allowed">
-                                <option value="all">All</option>
+                                <option value="all">全ての品詞</option>
                                 {PARTS_OF_SPEECH.map(pos => <option key={pos} value={pos}>{pos}</option>)}
                             </select>
                         </div>
                     )}
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm font-semibold text-slate-600">Frequency:</label>
+                        <label className="text-sm font-semibold text-slate-600">頻出度:</label>
                         <select 
                             value={frequencyLevel || ''} 
                             onChange={e => setFrequencyLevel(e.target.value ? Number(e.target.value) : undefined)} 
                             className="p-2 border rounded-md bg-slate-50 w-full disabled:opacity-70 disabled:cursor-not-allowed">
-                            <option value="">All</option>
-                            <option value="3">High (★★★)</option>
-                            <option value="2">Medium (★★☆)</option>
-                            <option value="1">Low (★☆☆)</option>
+                            <option value="">全て</option>
+                            <option value="3">高 (★★★)</option>
+                            <option value="2">中 (★★☆)</option>
+                            <option value="1">低 (★☆☆)</option>
                         </select>
                     </div>
                 </div>
             </fieldset>
 
              <div className="flex flex-col gap-2">
-                <label className="text-sm font-semibold text-slate-600">Mode:</label>
+                <label className="text-sm font-semibold text-slate-600">モード:</label>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                    <ModeButton mode="listening">Listening</ModeButton>
-                    <ModeButton mode="writing">Writing</ModeButton>
-                    <ModeButton mode="en-jp-quiz">EN → JP Quiz</ModeButton>
-                    <ModeButton mode="jp-en-quiz">JP → EN Quiz</ModeButton>
+                    <ModeButton mode="listening">リスニング</ModeButton>
+                    <ModeButton mode="writing">ライティング</ModeButton>
+                    <ModeButton mode="en-jp-quiz">英語→日本語 クイズ</ModeButton>
+                    <ModeButton mode="jp-en-quiz">日本語→英語 クイズ</ModeButton>
                 </div>
             </div>
             
             {(studyMode === 'en-jp-quiz' || studyMode === 'jp-en-quiz') && (
                 <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-2">
                     <div className="text-sm text-blue-800">
-                        <p><strong>Session Stats:</strong></p>
-                        <p>Learned: <span className="font-bold">{sessionLearnedIds.size}</span> | For Review: <span className="font-bold">{sessionReviewIds.size}</span></p>
+                        <p><strong>セッションの状況:</strong></p>
+                        <p>覚えた: <span className="font-bold">{sessionLearnedIds.size}</span> | 要復習: <span className="font-bold">{sessionReviewIds.size}</span></p>
                     </div>
                     <button onClick={exportReviewList} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition text-sm whitespace-nowrap" disabled={sessionReviewIds.size === 0}>
-                        Export Review List
+                        復習リストをエクスポート
                     </button>
                 </div>
             )}
 
             <div className="border-t border-slate-200 mt-2 pt-4">
-              <h3 className="text-sm font-semibold text-slate-600 mb-2">Or, start a focused review session:</h3>
+              <h3 className="text-sm font-semibold text-slate-600 mb-2">または、集中復習セッションを開始:</h3>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -502,7 +498,7 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
                 className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition disabled:bg-slate-400 disabled:cursor-not-allowed"
                 disabled={sessionSource === 'file' || isLoading}
               >
-                Upload Review List (.json)
+                復習リストをアップロード (.json)
               </button>
             </div>
         </div>

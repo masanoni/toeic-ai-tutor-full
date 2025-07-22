@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Screen, Level, VocabCategory, VocabType, VocabDBItem, ListeningPart, PartOfSpeech } from './types';
 import { ALL_LEVELS, ALL_CATEGORIES, LISTENING_PARTS } from './constants';
@@ -14,6 +15,7 @@ import BasicGrammarMode from './screens/BasicGrammarMode';
 import GrammarCheckScreen from './screens/GrammarCheckScreen';
 import AdminScreen from './screens/AdminScreen';
 import UserManualScreen from './screens/UserManualScreen';
+import MockTestMode from './screens/MockTestMode';
 import CategorySelectionModal from './components/CategorySelectionModal';
 import ListeningPartSelectionModal from './components/ListeningPartSelectionModal';
 import { getVocabCount, addVocabularyItems, getExistingWords } from './db';
@@ -55,19 +57,19 @@ export const App: React.FC = () => {
   useEffect(() => {
     const setupDatabase = async () => {
       setIsInitializing(true);
-      setInitStatus('Loading vocabulary from local database...');
+      setInitStatus('ローカルデータベースから語彙を読み込んでいます...');
       try {
         let count = await updateWordCount();
         if (count === 0) {
-          setInitStatus('Database is empty. Seeding with initial vocabulary...');
+          setInitStatus('データベースが空です。初期語彙データを追加しています...');
           await addVocabularyItems(INITIAL_VOCAB_DATA as VocabDBItem[]);
-          setInitStatus('Added initial items. Updating count...');
+          setInitStatus('初期データを追加しました。件数を更新中です...');
           count = await updateWordCount();
         }
-        setInitStatus(`Database ready. ${count} items loaded.`);
+        setInitStatus(`データベースの準備が完了しました。${count} 件の単語が読み込まれました。`);
       } catch (error) {
           console.error('Failed to initialize database:', error);
-          setInitStatus('Error setting up vocabulary. Please refresh.');
+          setInitStatus('語彙データベースのセットアップ中にエラーが発生しました。ページを再読み込みしてください。');
       } finally {
         setIsInitializing(false);
       }
@@ -77,9 +79,9 @@ export const App: React.FC = () => {
   
   const handleApiError = (error: unknown) => {
     if (error instanceof Error) {
-        alert(`An API error occurred: ${error.message}`);
+        alert(`APIエラーが発生しました: ${error.message}`);
     } else {
-        alert("An unknown API error occurred.");
+        alert("不明なAPIエラーが発生しました。");
     }
   }
 
@@ -171,6 +173,11 @@ export const App: React.FC = () => {
     unlockAudio();
     setCurrentScreen(Screen.GrammarCheck);
   };
+  
+  const handleStartMockTest = () => {
+    unlockAudio();
+    setCurrentScreen(Screen.MockTest);
+  }
 
   const handleStartListening = (level: Level) => {
     unlockAudio();
@@ -218,6 +225,8 @@ export const App: React.FC = () => {
         return <Part5Mode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} onApiError={handleApiError} />;
       case Screen.Part6:
         return <Part6Mode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} onApiError={handleApiError} />;
+       case Screen.MockTest:
+        return <MockTestMode onGoHome={handleGoHome} onApiError={handleApiError} />;
       case Screen.WordList:
         return <WordListScreen onGoHome={handleGoHome} onApiError={handleApiError} />;
       case Screen.BasicGrammar:
@@ -249,6 +258,7 @@ export const App: React.FC = () => {
             onStartPart6={handleStartPart6}
             onStartBasicGrammar={handleStartBasicGrammar}
             onStartGrammarCheck={handleStartGrammarCheck}
+            onStartMockTest={handleStartMockTest}
             onGoToAdmin={handleGoToAdmin}
             dbWordCount={dbWordCount}
             isInitializing={isInitializing}

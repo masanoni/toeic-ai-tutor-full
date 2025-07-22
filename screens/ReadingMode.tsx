@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Level, VocabCategory, ReadingPassage } from '../types';
 import { generateReadingPassage } from '../services/geminiService';
@@ -38,14 +39,14 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
 
       const data = await generateReadingPassage(currentLevel, categoryToFetch);
       if (!data || !data.questions || data.questions.length === 0) {
-        setError("Could not generate a reading passage with questions. Please try again.");
+        setError("設問付きの長文を生成できませんでした。もう一度お試しください。");
       } else {
         setPassageData(data);
         setAnswers(new Array(data.questions.length).fill(null));
       }
     } catch (e) {
       onApiError(e);
-      setError("An error occurred while fetching the passage.");
+      setError("長文の取得中にエラーが発生しました。");
       console.error(e);
     } finally {
       setIsLoading(false);
@@ -74,7 +75,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
   const renderContent = () => {
     if (isLoading) return <LoadingSpinner />;
     if (error) return <p className="text-center text-red-500 bg-red-100 p-4 rounded-lg">{error}</p>;
-    if (!passageData) return <p className="text-center text-slate-500">No passage loaded.</p>;
+    if (!passageData) return <p className="text-center text-slate-500">長文が読み込まれていません。</p>;
 
     const allQuestionsAnswered = answers.every(a => a !== null);
     const correctCount = answers.filter((ans, i) => ans === passageData.questions[i].correctOptionIndex).length;
@@ -86,7 +87,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
           <div className="md:w-1/2 lg:w-3/5">
             <div className="bg-white p-6 rounded-2xl shadow-xl sticky top-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Reading Passage</h2>
+                <h2 className="text-2xl font-bold">長文</h2>
                 {isSubmitted && (
                    <button onClick={() => setShowTranslation(prev => !prev)} className="bg-cyan-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-cyan-700 transition text-sm">
                       {showTranslation ? '日本語訳を隠す' : '日本語訳を表示'}
@@ -109,7 +110,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
           {/* Right Column: Questions */}
           <div className="md:w-1/2 lg:w-2/5">
             <div className="bg-white p-6 rounded-2xl shadow-xl">
-              <h2 className="text-2xl font-bold mb-4">Questions</h2>
+              <h2 className="text-2xl font-bold mb-4">設問</h2>
               <div className="space-y-6">
                 {passageData.questions.map((question, qIndex) => {
                   const selectedAnswer = answers[qIndex];
@@ -144,7 +145,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
                       </div>
                       {isSubmitted && (
                         <div className="mt-3 p-3 rounded-lg bg-slate-50 text-sm">
-                          <p className="font-bold text-slate-700">Explanation:</p>
+                          <p className="font-bold text-slate-700">解説:</p>
                           <p className="text-slate-600">{question.explanation}</p>
                         </div>
                       )}
@@ -156,7 +157,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
               <div className="mt-8 pt-6 border-t border-slate-200">
                 {isSubmitted ? (
                    <div className="text-center space-y-4">
-                        <p className="text-xl font-bold">Score: {correctCount} / {passageData.questions.length}</p>
+                        <p className="text-xl font-bold">スコア: {correctCount} / {passageData.questions.length}</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <button onClick={() => setIsIdiomsModalOpen(true)} className="bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-700 transition">
                                 重要単語・熟語
@@ -168,7 +169,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
                    </div>
                 ) : (
                   <button onClick={handleSubmit} disabled={!allQuestionsAnswered} className="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition disabled:bg-slate-400 disabled:cursor-not-allowed">
-                    {allQuestionsAnswered ? 'Check Answers' : 'Please answer all questions'}
+                    {allQuestionsAnswered ? '答え合わせ' : '全ての設問に解答してください'}
                   </button>
                 )}
               </div>
@@ -184,21 +185,21 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
     <div className="w-full max-w-7xl mx-auto p-4">
       {passageData && <IdiomsModal idioms={passageData.idioms} isOpen={isIdiomsModalOpen} onClose={() => setIsIdiomsModalOpen(false)} />}
       <div className="flex justify-between items-center mb-6">
-        <button onClick={onGoHome} className="text-blue-600 hover:text-blue-800">&larr; Back to Home</button>
-        <h1 className="text-2xl font-bold text-slate-800">Part 7: Reading Comprehension</h1>
+        <button onClick={onGoHome} className="text-blue-600 hover:text-blue-800">&larr; ホームに戻る</button>
+        <h1 className="text-2xl font-bold text-slate-800">パート7: 長文読解</h1>
         <div/>
       </div>
       <p className="text-center text-slate-600 -mt-4 mb-6">AIが生成した長文読解問題（パート7形式）です。</p>
       
       <div className="mb-6 p-4 bg-white rounded-lg shadow-md flex flex-col sm:flex-row flex-wrap gap-4 justify-center items-center">
         <div className="flex items-center gap-2">
-            <label className="font-semibold text-slate-600">Level:</label>
+            <label className="font-semibold text-slate-600">レベル:</label>
             <select value={currentLevel} onChange={e => setCurrentLevel(e.target.value as Level)} className="p-2 border rounded-md bg-white text-slate-800 focus:ring-2 focus:ring-blue-500" disabled={isLoading}>
                 {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
         </div>
         <button onClick={fetchPassage} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition" disabled={isLoading}>
-            {isLoading ? 'Generating...' : 'New Passage'}
+            {isLoading ? '生成中...' : '新しい文章'}
         </button>
       </div>
 

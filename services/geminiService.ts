@@ -5,7 +5,13 @@ import {
     ReadingPassage, Level, VocabCategory, VocabType, VocabDBItem, PartOfSpeech,
     ListeningExercise, ListeningPart, IncompleteSentenceExercise, TextCompletionExercise,
     GrammarQuizQuestion,
-    GrammarCheckResult
+    GrammarCheckResult,
+    MockTestContent,
+    PhotoDescriptionExercise,
+    MockTestConversation,
+    QuestionResponseExercise,
+    Part7Exercise,
+    Part7Passage
 } from '../types';
 import { VOCAB_CATEGORIES, LEVELS, ALL_LEVELS, ALL_CATEGORIES, PARTS_OF_SPEECH, GRAMMAR_TOPICS } from "../constants";
 
@@ -46,11 +52,35 @@ const getAiClient = (): GoogleGenAI => {
 
 const parseJsonResponse = <T,>(text: string): T | null => {
     let jsonStr = text.trim();
-    const fenceRegex = /^```(?:json)?\s*\n?(.*?)\n?\s*```$/s;
-    const match = jsonStr.match(fenceRegex);
-    if (match && match[2]) {
-        jsonStr = match[2].trim();
+
+    // The AI can sometimes return JSON wrapped in markdown, or with extra characters.
+    // We try to find the start of a JSON object or array and its corresponding end.
+    const firstBracket = jsonStr.indexOf('[');
+    const firstBrace = jsonStr.indexOf('{');
+    
+    let start = -1;
+    if (firstBracket === -1 && firstBrace === -1) {
+        // No JSON object or array found
+        console.error("No JSON start character ([ or {) found in response.", "Raw text:", `"${text}"`);
+        return null;
     }
+
+    if (firstBracket === -1) start = firstBrace;
+    else if (firstBrace === -1) start = firstBracket;
+    else start = Math.min(firstBracket, firstBrace);
+    
+    const lastBracket = jsonStr.lastIndexOf(']');
+    const lastBrace = jsonStr.lastIndexOf('}');
+    
+    let end = Math.max(lastBracket, lastBrace);
+
+    if (start !== -1 && end !== -1 && end > start) {
+        jsonStr = jsonStr.substring(start, end + 1);
+    } else {
+        // Fallback or if the above logic fails, let's try to see if it's a simple case
+        console.warn("Could not reliably determine JSON boundaries, attempting to parse as is.");
+    }
+    
     try {
         return JSON.parse(jsonStr) as T;
     } catch (e) {
@@ -247,7 +277,11 @@ export const generateIncompleteSentenceExercise = async (level: Level, category:
             config: { systemInstruction, responseMimeType: "application/json" },
         });
         
-        return parseJsonResponse<IncompleteSentenceExercise>(response.text);
+        const result = await parseJsonResponse<any>(response.text);
+        if(result) {
+            return { ...result, part: 'Part 5' };
+        }
+        return null;
     } catch (error) {
         console.error("Error generating incomplete sentence exercise:", error);
         throw error;
@@ -271,7 +305,12 @@ export const generateTextCompletionExercise = async (level: Level, category: Voc
             config: { systemInstruction, responseMimeType: "application/json" },
         });
         
-        return parseJsonResponse<TextCompletionExercise>(response.text);
+        const result = await parseJsonResponse<any>(response.text);
+        if(result) {
+            return { ...result, part: 'Part 6' };
+        }
+        return null;
+
     } catch (error) {
         console.error("Error generating text completion exercise:", error);
         throw error;
@@ -442,4 +481,208 @@ export const assignFrequencyLevels = async (items: { id: number, type: VocabType
         console.error("Error assigning frequency levels:", error);
         throw error;
     }
+};
+
+// --- MOCK TEST GENERATION ---
+const testGenConfig = {
+    systemInstruction,
+    responseMimeType: "application/json",
+    temperature: 1.0,
+};
+const testDifficulty = "slightly harder than a standard TOEIC test";
+
+export const generateImagePrompt = async (existingSituations: string[]): Promise<string | null> => {
+    const ai = getAiClient();
+     const creativeSituations = [
+        'a person paying for groceries at a checkout counter',
+        'a construction worker examining blueprints at a noisy site',
+        'a group of tourists looking at a map in a historic city square',
+        'a chef garnishing a plate in a busy restaurant kitchen',
+        'a scientist looking into a microscope in a laboratory',
+        'two people jogging in a park on a sunny day',
+        'a librarian stamping books at a library front desk',
+        'a passenger pulling a suitcase through an airport terminal',
+        'a musician tuning a guitar on a stage',
+        'a gardener watering plants in a greenhouse',
+        'a person assembling flat-pack furniture in a living room',
+        'a mechanic working under a car in a garage',
+    ];
+    const prompt = `
+    Generate a single, concise, descriptive prompt for an image generation model.
+    The prompt should describe a realistic, high-quality photograph suitable for a TOEIC Part 1 question.
+    It should depict a common real-world scenario. Choose a scenario that is distinct and different from the following examples.
+    
+    DO NOT generate a prompt describing any of these situations:
+    - ${existingSituations.join('\n- ') || 'None provided'}
+
+    Here are some ideas for creative situations. You can use one of these or come up with your own original idea:
+    - ${creativeSituations.join('\n- ')}
+    
+    Example output format: "A high-quality, realistic photograph of two people, a man and a woman, shaking hands in a modern office meeting room. A laptop is on the table."
+    Do not return JSON. Return only the raw text of the prompt.
+    `;
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+    });
+    return response.text;
+};
+
+export const generateImage = async (prompt: string): Promise<string | null> => {
+    const ai = getAiClient();
+    try {
+        const response = await ai.models.generateImages({
+            model: 'imagen-3.0-generate-002',
+            prompt: prompt,
+            config: {
+                numberOfImages: 1,
+                outputMimeType: 'image/jpeg',
+                aspectRatio: '4:3',
+            },
+        });
+        return response.generatedImages[0].image.imageBytes;
+    } catch (error) {
+        console.error("Error generating image:", error);
+        throw error;
+    }
+};
+
+export const generatePart1Batch = async (image_base64: string, imagePrompt: string): Promise<PhotoDescriptionExercise | null> => {
+    const ai = getAiClient();
+    const prompt = {
+        parts: [
+            { inlineData: { mimeType: 'image/jpeg', data: image_base64 } },
+            {
+                text: `
+                Analyze this image. Generate a JSON object for a TOEIC Part 1 exercise based on it.
+                The difficulty must be ${testDifficulty}.
+                The JSON object must have keys: "part", "options", "correctOptionIndex", "explanation".
+                1. "part": The string "Part 1".
+                2. "options": An array of 4 short, descriptive English sentences. One sentence must accurately describe the image. The other three must be plausible but incorrect distractors.
+                3. "correctOptionIndex": The 0-based index of the correct description.
+                4. "explanation": A concise explanation in Japanese about why the chosen option is correct and the others are not.
+                The output MUST be a single, raw, valid JSON object.`
+            }
+        ]
+    };
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: testGenConfig,
+    });
+    const result = await parseJsonResponse<any>(response.text);
+    if(result) {
+        return { ...result, image_base64, imagePrompt };
+    }
+    return null;
+};
+
+export const generatePart2Batch = async (count: number): Promise<QuestionResponseExercise[] | null> => {
+    const ai = getAiClient();
+    const prompt = `
+    Generate a JSON array of ${count} unique TOEIC Part 2 (Question-Response) exercises.
+    The difficulty must be ${testDifficulty}.
+    Each object in the array must have keys: "part", "question", "options" (array of 3 strings), "correctOptionIndex", and "explanation" (in Japanese).
+    The output MUST be a single, raw, valid JSON array.
+    `;
+    const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt, config: testGenConfig });
+    return parseJsonResponse<QuestionResponseExercise[]>(response.text);
+};
+
+export const generatePart3Batch = async (count: number): Promise<MockTestConversation[] | null> => {
+    const ai = getAiClient();
+    const prompt = `
+    Generate a JSON array of ${count} unique TOEIC Part 3 (Conversation) exercises. This means you must generate ${count} objects.
+    The difficulty must be ${testDifficulty}.
+    Each object in the array represents one conversation and must have keys: "part", "title", "passage" (a conversation between 2 or 3 people), and "questions".
+    The "questions" key must contain an array of EXACTLY 3 unique "ListeningQuestion" objects for that conversation.
+    Each question object needs "question", "options" (array of 4 objects with "en" and "jp" keys), "correctOptionIndex", and "explanation" (in Japanese).
+    The output MUST be a single, raw, valid JSON array.
+    `;
+    const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt, config: testGenConfig });
+    return parseJsonResponse<MockTestConversation[]>(response.text);
+};
+
+export const generatePart4Batch = async (count: number): Promise<MockTestConversation[] | null> => {
+    const ai = getAiClient();
+    const prompt = `
+    Generate a JSON array of ${count} unique TOEIC Part 4 (Short Talk) exercises. This means you must generate ${count} objects.
+    The difficulty must be ${testDifficulty}.
+    Each object in the array represents one talk and must have keys: "part", "title", "passage" (a short talk by one person), and "questions".
+    The "questions" key must contain an array of EXACTLY 3 unique "ListeningQuestion" objects for that talk.
+    Each question object needs "question", "options" (array of 4 objects with "en" and "jp" keys), "correctOptionIndex", and "explanation" (in Japanese).
+    The output MUST be a single, raw, valid JSON array.
+    `;
+    const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt, config: testGenConfig });
+    return parseJsonResponse<MockTestConversation[]>(response.text);
+};
+
+export const generatePart5Batch = async (count: number): Promise<IncompleteSentenceExercise[] | null> => {
+    const ai = getAiClient();
+    const prompt = `
+    Generate a JSON array of ${count} unique TOEIC Part 5 (Incomplete Sentence) exercises.
+    The difficulty must be ${testDifficulty}.
+    Each object must have keys: "part", "sentence_with_blank", "options" (array of 4 strings), "correctOptionIndex", and "explanation_jp".
+    The output MUST be a single, raw, valid JSON array.
+    `;
+    const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt, config: testGenConfig });
+    return parseJsonResponse<IncompleteSentenceExercise[]>(response.text);
+};
+
+export const generatePart6Batch = async (count: number): Promise<TextCompletionExercise[] | null> => {
+    const ai = getAiClient();
+    const prompt = `
+    Generate a JSON array of ${count} unique TOEIC Part 6 (Text Completion) exercises. This means you must generate ${count} objects.
+    The difficulty must be ${testDifficulty}.
+    Each object must have keys: "part", "passage" (with 4 blanks), and "questions" (an array of exactly 4 question objects).
+    Each question object needs "blank_number", "options", "correctOptionIndex", and "explanation_jp".
+    The output MUST be a single, raw, valid JSON array.
+    `;
+    const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt, config: testGenConfig });
+    return parseJsonResponse<TextCompletionExercise[]>(response.text);
+};
+
+export const generatePart7Batch = async (singlePassageCount: number, multiPassageCount: number): Promise<Part7Exercise[] | null> => {
+    const ai = getAiClient();
+    const totalSingleQuestions = 29;
+    const totalMultiQuestions = 25;
+    const questionsPerMulti = 5;
+
+    const prompt = `
+    Generate a JSON array of TOEIC Part 7 reading exercises. The difficulty must be ${testDifficulty}.
+    The array MUST contain EXACTLY ${singlePassageCount} single-passage exercises and ${multiPassageCount} multi-passage exercises.
+    
+    - For the ${singlePassageCount} single-passage exercises: The total number of questions across all of them MUST sum to EXACTLY ${totalSingleQuestions}. Vary the number of questions per exercise (between 2 and 4) to meet this total.
+    - For the ${multiPassageCount} multi-passage exercises: EACH of the ${multiPassageCount} exercises MUST have EXACTLY ${questionsPerMulti} questions, for a total of ${totalMultiQuestions} questions. Multi-passage exercises should contain 2 or 3 passages each.
+    
+    Each object in the array must have keys: "part", "passages", "questions".
+    - "part": Must be "Part 7".
+    - "passages": An array of "Part7Passage" objects. For single-passage exercises, this array has 1 element. For multi-passage, it has 2 or 3 elements. Each passage object has "type", "title", and "content".
+    - "questions": An array of "ReadingQuestion" objects per exercise. Each question has "question", "options" (array of 4 strings), "correctOptionIndex", and "explanation" (in Japanese).
+    
+    Ensure the total number of exercises in the top-level array is exactly ${singlePassageCount + multiPassageCount}.
+    The output MUST be a single, raw, valid JSON array.
+    `;
+    const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt, config: testGenConfig });
+    return parseJsonResponse<Part7Exercise[]>(response.text);
+};
+
+export const generateAdvice = async (testContent: MockTestContent): Promise<string | null> => {
+    const ai = getAiClient();
+    const contentSample = JSON.stringify(testContent).substring(0, 4000); // Send a sample of the test
+    const prompt = `
+    Based on the content of the following TOEIC test data, generate personalized study advice in Japanese.
+    The advice should be friendly, encouraging, and specific.
+    Analyze the types of questions, vocabulary, and grammar structures present in the test.
+    Suggest which areas the user should focus on for improvement.
+    Do not return JSON. Return only the raw text of the advice.
+
+    Test data sample:
+    ${contentSample}
+    `;
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+    });
+    return response.text;
 };

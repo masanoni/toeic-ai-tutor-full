@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { ReadingPassage } from '../types';
 import CloseIcon from './icons/CloseIcon';
@@ -31,7 +32,7 @@ const IdiomsModal: React.FC<IdiomsModalProps> = ({ idioms, isOpen, onClose }) =>
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-4 border-b border-slate-200 flex-shrink-0">
-          <h2 className="text-xl font-bold text-slate-800">Key Idioms & Phrases</h2>
+          <h2 className="text-xl font-bold text-slate-800">重要単語・熟語</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-800">
             <CloseIcon className="w-7 h-7" />
           </button>
@@ -56,7 +57,7 @@ const IdiomsModal: React.FC<IdiomsModalProps> = ({ idioms, isOpen, onClose }) =>
               </div>
           ))}
           {idioms.length === 0 && (
-            <p className="text-slate-500 text-center py-4">No specific idioms or key phrases were highlighted for this passage.</p>
+            <p className="text-slate-500 text-center py-4">この文章で特に重要とされた単語や熟語はありませんでした。</p>
           )}
         </div>
         <div className="p-4 border-t border-slate-200 text-right flex-shrink-0">
@@ -64,7 +65,7 @@ const IdiomsModal: React.FC<IdiomsModalProps> = ({ idioms, isOpen, onClose }) =>
                 onClick={onClose} 
                 className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition"
             >
-                Close
+                閉じる
             </button>
         </div>
       </div>
