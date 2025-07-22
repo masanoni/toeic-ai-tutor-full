@@ -1,8 +1,8 @@
 
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Level, MockTest, MockTestAttempt, MockTestContent, UserAnswers, MockTestQuestionKey, PhotoDescriptionExercise, QuestionResponseExercise, MockTestConversation, IncompleteSentenceExercise, TextCompletionExercise, Part7Exercise, ReadingQuestion, Omit } from '../types';
-import { generatePart1Batch, generatePart2Batch, generatePart3Batch, generatePart4Batch, generatePart5Batch, generatePart6Batch, generatePart7Batch, generateImagePrompt, generateImage, generateAdvice } from '../services/geminiService';
+import { Level, MockTest, MockTestAttempt, MockTestContent, UserAnswers, MockTestQuestionKey, PhotoDescriptionExercise, QuestionResponseExercise, MockTestConversation, IncompleteSentenceExercise, TextCompletionExercise, Part7Exercise, ReadingQuestion, Omit, ListeningQuestion } from '../types';
+import { generatePart1Batch, generatePart2Batch, generatePart3Batch, generatePart4Batch, generatePart5Batch, generatePart6Batch, generatePart7Batch, generateScenePrompt, generateSceneDescription, generateAdvice } from '../services/geminiService';
 import { getAllMockTests, addMockTest, getMockTest, updateMockTest, deleteMockTest } from '../db';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useTextToSpeech, SpeechCancellationError } from '../hooks/useTextToSpeech';
@@ -17,7 +17,7 @@ const ResumeIcon = ({ className = "w-5 h-5" }) => <svg xmlns="http://www.w3.org/
 
 
 const GENERATION_CONFIG = [
-    { id: 'part1', name: "Part 1: Photographs", store: 'listening', count: 6, generator: generatePart1Batch },
+    { id: 'part1', name: "Part 1: Scene Description", store: 'listening', count: 6, generator: generatePart1Batch },
     { id: 'part2', name: "Part 2: Question-Response", store: 'listening', count: 25, generator: generatePart2Batch },
     { id: 'part3', name: "Part 3: Conversations", store: 'listening', count: 13, generator: generatePart3Batch }, // 13 convos * 3 questions = 39
     { id: 'part4', name: "Part 4: Talks", store: 'listening', count: 10, generator: generatePart4Batch }, // 10 talks * 3 questions = 30
@@ -165,12 +165,13 @@ const TestPlayer = ({ test, attempt, onFinishAttempt, onPauseAttempt, onTimeUpda
                         {content.listening?.part1?.map((q, i) => (
                             <div key={`l1_${i}`} className="border-b pb-8 last:border-b-0 last:pb-0">
                                 <p className="font-bold mb-2">Question {questionNumbers.part1 + i}</p>
-                                <div className="flex flex-col md:flex-row gap-4">
-                                    <img src={`data:image/jpeg;base64,${q.image_base64}`} alt={`Question ${i+1}`} className="rounded-lg shadow-md w-full md:w-80 h-auto" />
-                                    <div className="flex-grow">
-                                        <button onClick={() => playAudio(q.options)} disabled={isSpeaking} className="mb-4 flex items-center gap-2 p-2 bg-slate-100 rounded-md hover:bg-slate-200 disabled:opacity-50"><SoundIcon className="w-5 h-5 text-blue-600"/> Play Options</button>
-                                        <RadioGroup qKey={`l1_${i}`} options={q.options.map((opt, idx) => ({label: `Option ${String.fromCharCode(65+idx)}`}))} selectedValue={userAnswers[`l1_${i}`] ?? null} onSelect={handleAnswerSelect} disabled={false} />
-                                    </div>
+                                <div className="p-4 bg-slate-100 rounded-lg mb-4">
+                                    <p className="font-semibold text-slate-600 mb-2">Direction: Read the scene description, then choose the statement that best describes what you read.</p>
+                                    <p className="text-slate-800 leading-relaxed">{q.sceneDescription}</p>
+                                </div>
+                                <div className="flex-grow">
+                                    <button onClick={() => playAudio(q.options)} disabled={isSpeaking} className="mb-4 flex items-center gap-2 p-2 bg-slate-100 rounded-md hover:bg-slate-200 disabled:opacity-50"><SoundIcon className="w-5 h-5 text-blue-600"/> Play Options</button>
+                                    <RadioGroup qKey={`l1_${i}`} options={q.options.map((opt, idx) => ({label: `Option ${String.fromCharCode(65+idx)}`}))} selectedValue={userAnswers[`l1_${i}`] ?? null} onSelect={handleAnswerSelect} disabled={false} />
                                 </div>
                             </div>
                         ))}
@@ -205,7 +206,10 @@ const TestPlayer = ({ test, attempt, onFinishAttempt, onPauseAttempt, onTimeUpda
                                 const globalQIndex = questionCounter + qIndex;
                                 return (
                                     <div key={`${keyPrefix}_${pIndex}_${qIndex}`} className="border-t pt-4 mt-4">
-                                        <p className="font-bold mb-2">{qNumStart + globalQIndex}. {q.question}</p>
+                                        <p className="font-bold mb-2 flex items-center gap-2">
+                                            {qNumStart + globalQIndex}. {q.question}
+                                            {q.refersToGraphic && <PhotoIcon className="w-4 h-4 text-slate-500" title="Refers to graphic" />}
+                                        </p>
                                         <RadioGroup qKey={`${keyPrefix}_${pIndex}_${qIndex}`} options={q.options.map(o => ({label: o.en}))} selectedValue={userAnswers[`${keyPrefix}_${pIndex}_${qIndex}`] ?? null} onSelect={handleAnswerSelect} disabled={false} />
                                     </div>
                                 );
@@ -217,6 +221,12 @@ const TestPlayer = ({ test, attempt, onFinishAttempt, onPauseAttempt, onTimeUpda
                                         <p className="font-bold">{convo.title}</p>
                                         <button onClick={() => playAudio(convo.passage.map(s => s.english))} disabled={isSpeaking} className="p-1 rounded-full hover:bg-slate-200 disabled:opacity-50"><SoundIcon className="w-6 h-6 text-blue-600"/></button>
                                     </div>
+                                    {convo.graphic && (
+                                        <div className="my-4 p-3 bg-white border border-slate-300 rounded-lg">
+                                            <h5 className="font-bold text-sm text-slate-500 mb-2 flex items-center gap-1"><PhotoIcon className="w-4 h-4" /> Look at the graphic.</h5>
+                                            <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans">{convo.graphic}</pre>
+                                        </div>
+                                    )}
                                     {passageQuestions}
                                 </div>
                             )
@@ -363,12 +373,16 @@ const ReviewPlayer = ({ test, attempt }: { test: MockTest, attempt: MockTestAtte
         correctOptionIndex: number,
         userAnswerIndex: number | null,
         explanation: string,
-        audioText?: string | string[] // For replaying audio
+        audioText?: string | string[], // For replaying audio
+        refersToGraphic?: boolean
     ) => {
         return (
             <div className="border-t border-slate-200 pt-4 mt-4 first:mt-0 first:border-t-0">
                 <div className="flex justify-between items-start">
-                    <p className="font-semibold text-slate-800 mb-3 flex-grow" dangerouslySetInnerHTML={{ __html: questionText }} />
+                    <p className="font-semibold text-slate-800 mb-3 flex-grow flex items-center gap-2">
+                        <span dangerouslySetInnerHTML={{ __html: questionText }} />
+                        {refersToGraphic && <PhotoIcon className="w-4 h-4 text-slate-500 flex-shrink-0" title="Refers to graphic" />}
+                    </p>
                     {audioText && (
                         <button
                             onClick={async () => {
@@ -459,6 +473,12 @@ const ReviewPlayer = ({ test, attempt }: { test: MockTest, attempt: MockTestAtte
                                         <SoundIcon className="w-6 h-6" />
                                     </button>
                                 </div>
+                                {convo.graphic && (
+                                    <div className="my-4 p-3 bg-white border border-slate-300 rounded-lg">
+                                        <h5 className="font-bold text-sm text-slate-500 mb-2 flex items-center gap-1"><PhotoIcon className="w-4 h-4" /> Graphic</h5>
+                                        <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans">{convo.graphic}</pre>
+                                    </div>
+                                )}
                                 <div className="max-h-48 overflow-y-auto mb-4 border p-2 rounded bg-white text-sm space-y-1">
                                     {convo.passage.map((s, sIndex) => <p key={sIndex}>{s.english}</p>)}
                                 </div>
@@ -470,7 +490,9 @@ const ReviewPlayer = ({ test, attempt }: { test: MockTest, attempt: MockTestAtte
                                             q.options.map(opt => opt.en),
                                             q.correctOptionIndex,
                                             answers[`${keyPrefix}_${pIndex}_${qIndex}`] ?? null,
-                                            q.explanation
+                                            q.explanation,
+                                            undefined, // No audio replay for individual questions here
+                                            q.refersToGraphic
                                         )}
                                     </div>
                                 ))}
@@ -498,23 +520,22 @@ const ReviewPlayer = ({ test, attempt }: { test: MockTest, attempt: MockTestAtte
                 {/* Part 1 */}
                 {content.listening?.part1 && (
                     <section>
-                        <h3 className="text-2xl font-bold text-slate-700 border-b-2 border-blue-500 pb-2 mb-4">Part 1: Photographs</h3>
+                        <h3 className="text-2xl font-bold text-slate-700 border-b-2 border-blue-500 pb-2 mb-4">Part 1: Scene Descriptions</h3>
                         <div className="space-y-8">
                             {content.listening.part1.map((q, i) => (
-                                <div key={`l1_${i}`} className="flex flex-col md:flex-row gap-4">
-                                    <div className="md:w-1/3 flex-shrink-0">
-                                        <img src={`data:image/jpeg;base64,${q.image_base64}`} alt={`Part 1 Question ${i+1}`} className="rounded-lg shadow-md w-full" />
+                                <div key={`l1_${i}`} className="bg-slate-50 p-4 rounded-lg">
+                                    <div className="mb-4">
+                                        <h4 className="font-bold text-slate-700">Scene Description:</h4>
+                                        <p className="text-slate-600">{q.sceneDescription}</p>
                                     </div>
-                                    <div className="md:w-2/3">
-                                        {renderQuestionBlock(
-                                            `Question ${i + 1}`,
-                                            q.options,
-                                            q.correctOptionIndex,
-                                            answers[`l1_${i}`] ?? null,
-                                            q.explanation,
-                                            q.options
-                                        )}
-                                    </div>
+                                    {renderQuestionBlock(
+                                        `Question ${i + 1}`,
+                                        q.options,
+                                        q.correctOptionIndex,
+                                        answers[`l1_${i}`] ?? null,
+                                        q.explanation,
+                                        q.options
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -695,11 +716,11 @@ const MockTestMode: React.FC<MockTestModeProps> = ({ onGoHome, onApiError }) => 
     setView('generating');
     setError(null);
     let test: MockTest;
-    let allPrompts: string[] = [];
+    let allScenePrompts: string[] = [];
 
     // Gather existing prompts from all tests to ensure diversity
     const allTests = await getAllMockTests();
-    allPrompts = allTests.flatMap(t => t.imagePrompts || []);
+    allScenePrompts = allTests.flatMap(t => t.scenePrompts || []);
 
 
     if (testToResume) {
@@ -710,7 +731,7 @@ const MockTestMode: React.FC<MockTestModeProps> = ({ onGoHome, onApiError }) => 
             createdAt: Date.now(),
             level: 'Slightly Harder',
             content: {},
-            imagePrompts: [],
+            scenePrompts: [],
             advice: '',
             attempts: [],
             status: 'generating',
@@ -725,7 +746,7 @@ const MockTestMode: React.FC<MockTestModeProps> = ({ onGoHome, onApiError }) => 
 
     if (!test.content.listening) test.content.listening = {};
     if (!test.content.reading) test.content.reading = {};
-    if (!test.imagePrompts) test.imagePrompts = [];
+    if (!test.scenePrompts) test.scenePrompts = [];
 
     try {
         const totalSteps = GENERATION_CONFIG.length;
@@ -746,18 +767,18 @@ const MockTestMode: React.FC<MockTestModeProps> = ({ onGoHome, onApiError }) => 
             if (step.id === 'part1') {
                 result = [];
                 for (let j = 0; j < step.count; j++) {
-                    setGenStatus({ message: `${step.name} (${j + 1}/${step.count}) - 画像プロンプトを作成中...`, progress });
-                    const imagePrompt = await generateImagePrompt(allPrompts);
-                    if (!imagePrompt) throw new Error("画像プロンプトの生成に失敗しました。");
-                    allPrompts.push(imagePrompt);
-                    test.imagePrompts.push(imagePrompt);
+                    setGenStatus({ message: `${step.name} (${j + 1}/${step.count}) - シーンプロンプトを作成中...`, progress });
+                    const scenePrompt = await generateScenePrompt(allScenePrompts);
+                    if (!scenePrompt) throw new Error("シーンプロンプトの生成に失敗しました。");
+                    allScenePrompts.push(scenePrompt);
+                    test.scenePrompts.push(scenePrompt);
                     
-                    setGenStatus({ message: `${step.name} (${j + 1}/${step.count}) - 画像を作成中...`, progress: progress + ((j / step.count) * (100 / totalSteps) * 0.5) });
-                    const image_base64 = await generateImage(imagePrompt);
-                    if (!image_base64) throw new Error("画像の生成に失敗しました。");
+                    setGenStatus({ message: `${step.name} (${j + 1}/${step.count}) - シーンを記述中...`, progress: progress + ((j / step.count) * (100 / totalSteps) * 0.5) });
+                    const sceneDescription = await generateSceneDescription(scenePrompt);
+                    if (!sceneDescription) throw new Error("シーン記述の生成に失敗しました。");
 
                     setGenStatus({ message: `${step.name} (${j + 1}/${step.count}) - 問題を作成中...`, progress: progress + ((j / step.count) * (100 / totalSteps)) });
-                    const question = await generatePart1Batch(image_base64, imagePrompt);
+                    const question = await generatePart1Batch(sceneDescription, scenePrompt);
                     if (!question) throw new Error(`${step.name}の問${j + 1}の生成に失敗しました。`);
                     result.push(question);
                 }
@@ -800,7 +821,7 @@ const MockTestMode: React.FC<MockTestModeProps> = ({ onGoHome, onApiError }) => 
   const handlePauseAttempt = async (answers: UserAnswers, timeLeft: number) => {
     if (!selectedTest || !currentAttempt) return;
     
-    const updatedAttempt = { ...currentAttempt, answers, timeLeft };
+    const updatedAttempt = { ...currentAttempt, answers, timeLeft, status: 'in-progress' as const };
     const updatedTest = { ...selectedTest, attempts: selectedTest.attempts.map(a => a.id === updatedAttempt.id ? updatedAttempt : a) };
 
     await updateMockTest(updatedTest);
@@ -961,7 +982,7 @@ const MockTestMode: React.FC<MockTestModeProps> = ({ onGoHome, onApiError }) => 
                             <p><strong>受験日:</strong> {new Date(attempt.date).toLocaleString()}</p>
                             <p><strong>スコア:</strong> {attempt.score.total}% (L: {attempt.score.listening}%, R: {attempt.score.reading}%)</p>
                         </div>
-                        <button onClick={() => { setSelectedTest(selectedTest); setCurrentAttempt(attempt); setView('review');}} className="bg-blue-100 text-blue-800 font-semibold py-1 px-3 rounded-md hover:bg-blue-200">
+                        <button onClick={() => { setCurrentAttempt(attempt); setView('review');}} className="bg-blue-100 text-blue-800 font-semibold py-1 px-3 rounded-md hover:bg-blue-200">
                             復習する
                         </button>
                     </div>
