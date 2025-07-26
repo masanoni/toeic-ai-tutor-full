@@ -20,6 +20,16 @@ interface ListeningModeProps {
 
 type GameState = 'loading' | 'ready' | 'listening' | 'answering' | 'answered';
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
 export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialCategory, level, part, onApiError }) => {
   const [exercise, setExercise] = useState<ListeningExercise | null>(null);
   const [gameState, setGameState] = useState<GameState>('loading');
@@ -68,15 +78,15 @@ export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialC
     setGameState('listening');
     try {
         if(exercise.part === ListeningPart.Part2) {
-            await speak(exercise.question, 'en-US');
+            await speak(getSafeString(exercise.question), 'en-US');
             await new Promise(r => setTimeout(r, 500));
             for(const option of exercise.options) {
-                await speak(option, 'en-US');
+                await speak(getSafeString(option), 'en-US');
                 await new Promise(r => setTimeout(r, 400));
             }
         } else {
             for(const sentence of exercise.passage) {
-                await speak(sentence.english, 'en-US');
+                await speak(getSafeString(sentence.english), 'en-US');
                 await new Promise(r => setTimeout(r, 300));
             }
         }
@@ -92,10 +102,10 @@ export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialC
     if (!exercise || isSpeaking) return;
     try {
         if(exercise.part === ListeningPart.Part2) {
-            await speak(exercise.question, 'en-US');
+            await speak(getSafeString(exercise.question), 'en-US');
         } else {
             for (const sentence of exercise.passage) {
-                await speak(sentence.english, 'en-US');
+                await speak(getSafeString(sentence.english), 'en-US');
                 await new Promise(r => setTimeout(r, 300));
             }
         }
@@ -121,7 +131,7 @@ export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialC
     return (
         <div className="w-full bg-white p-6 md:p-8 rounded-2xl shadow-xl flex flex-col items-center">
             <h2 className="text-2xl font-bold text-slate-800 mb-4 text-center">
-                {isPart2 ? '応答問題' : (exercise as ConversationExercise).title}
+                {isPart2 ? '応答問題' : getSafeString((exercise as ConversationExercise).title)}
             </h2>
             
             {gameState === 'ready' && (
@@ -139,7 +149,7 @@ export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialC
             
             {(gameState === 'answering' || gameState === 'answered') && (
                 <div className="w-full text-left mt-4">
-                    {!isPart2 && <p className="text-lg font-semibold text-slate-700 mb-4">{(exercise as ConversationExercise).question}</p>}
+                    {!isPart2 && <p className="text-lg font-semibold text-slate-700 mb-4">{getSafeString((exercise as ConversationExercise).question)}</p>}
                     <div className="space-y-3">
                         {exercise.options.map((option, index) => {
                              const isSelected = selectedAnswerIndex === index;
@@ -152,8 +162,8 @@ export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialC
                                 buttonClass += 'bg-white border-slate-300 hover:bg-blue-50 hover:border-blue-400';
                              }
                             
-                             const optionText = isPart2 ? `(${String.fromCharCode(65 + index)}) ${(option as string)}` : (option as {en: string}).en;
-                             const translationText = !isPart2 ? (option as {jp: string}).jp : null;
+                             const optionText = isPart2 ? `(${String.fromCharCode(65 + index)}) ${getSafeString(option)}` : getSafeString((option as {en: string}).en);
+                             const translationText = !isPart2 ? getSafeString((option as {jp: string}).jp) : null;
 
                             return (
                                 <button key={index} onClick={() => handleSelectAnswer(index)} disabled={gameState === 'answered'} className={buttonClass}>
@@ -170,7 +180,7 @@ export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialC
                  <div className="w-full mt-6 space-y-4">
                     <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
                         <h3 className={`text-xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>{isCorrect ? "正解！" : "不正解"}</h3>
-                        <p className="text-slate-700">{exercise.explanation}</p>
+                        <p className="text-slate-700">{getSafeString(exercise.explanation)}</p>
                     </div>
 
                     {!isPart2 && (
@@ -201,7 +211,7 @@ export const ListeningMode: React.FC<ListeningModeProps> = ({ onGoHome, initialC
         {isScriptModalOpen && exercise && exercise.part !== ListeningPart.Part2 && (
             <ScriptModal 
                 passage={(exercise as ConversationExercise).passage}
-                title={(exercise as ConversationExercise).title}
+                title={getSafeString((exercise as ConversationExercise).title)}
                 onClose={() => setIsScriptModalOpen(false)}
             />
         )}

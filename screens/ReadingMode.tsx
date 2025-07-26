@@ -14,6 +14,17 @@ interface ReadingModeProps {
   onApiError: (error: unknown) => void;
 }
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
+
 const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, level, onApiError }) => {
   const [passageData, setPassageData] = useState<ReadingPassage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,9 +108,9 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
               <div className="space-y-4 text-base leading-relaxed max-h-[65vh] overflow-y-auto pr-2">
                 {passageData.passage.map((sentence, index) => (
                   <div key={index} className="pb-2">
-                    <p className="text-slate-800 font-medium leading-relaxed">{sentence.english}</p>
+                    <p className="text-slate-800 font-medium leading-relaxed">{getSafeString(sentence.english)}</p>
                     {showTranslation && (
-                      <p className="text-slate-500 mt-1 leading-relaxed">{sentence.japanese}</p>
+                      <p className="text-slate-500 mt-1 leading-relaxed">{getSafeString(sentence.japanese)}</p>
                     )}
                   </div>
                 ))}
@@ -117,7 +128,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
                   return (
                     <div key={qIndex} className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
                       <p className="font-semibold text-slate-800 mb-3">
-                        {qIndex + 1}. {question.question}
+                        {qIndex + 1}. {getSafeString(question.question)}
                       </p>
                       <div className="space-y-2">
                         {question.options.map((option, oIndex) => {
@@ -138,7 +149,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
                           }
                           return (
                             <button key={oIndex} onClick={() => handleSelectAnswer(qIndex, oIndex)} disabled={isSubmitted} className={buttonClass}>
-                              ({String.fromCharCode(65 + oIndex)}) {option}
+                              ({String.fromCharCode(65 + oIndex)}) {getSafeString(option)}
                             </button>
                           );
                         })}
@@ -146,7 +157,7 @@ const ReadingMode: React.FC<ReadingModeProps> = ({ onGoHome, initialCategory, le
                       {isSubmitted && (
                         <div className="mt-3 p-3 rounded-lg bg-slate-50 text-sm">
                           <p className="font-bold text-slate-700">解説:</p>
-                          <p className="text-slate-600">{question.explanation}</p>
+                          <p className="text-slate-600">{getSafeString(question.explanation)}</p>
                         </div>
                       )}
                     </div>

@@ -15,6 +15,16 @@ interface Part6ModeProps {
 
 type GameState = 'loading' | 'answering' | 'answered';
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
 const Part6Mode: React.FC<Part6ModeProps> = ({ onGoHome, initialCategory, level, onApiError }) => {
   const [exercise, setExercise] = useState<TextCompletionExercise | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -81,7 +91,7 @@ const Part6Mode: React.FC<Part6ModeProps> = ({ onGoHome, initialCategory, level,
   
   const renderPassage = () => {
     if (!exercise) return null;
-    let passageHtml = exercise.passage;
+    let passageHtml = getSafeString(exercise.passage);
     exercise.questions.forEach((q, i) => {
         const blankNumber = q.blank_number;
         let content: string;
@@ -131,7 +141,7 @@ const Part6Mode: React.FC<Part6ModeProps> = ({ onGoHome, initialCategory, level,
 
                         return (
                             <button key={index} onClick={() => handleSelectAnswer(index)} disabled={gameState === 'answered'} className={buttonClass}>
-                               ({String.fromCharCode(65 + index)}) {option}
+                               ({String.fromCharCode(65 + index)}) {getSafeString(option)}
                             </button>
                         );
                     })}
@@ -143,7 +153,7 @@ const Part6Mode: React.FC<Part6ModeProps> = ({ onGoHome, initialCategory, level,
                     <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
                         <h3 className={`text-xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>{isCorrect ? "正解" : "不正解"}</h3>
                         <p className="font-bold text-slate-700 mt-3">解説:</p>
-                        <p className="text-slate-700 whitespace-pre-wrap">{currentQuestion.explanation_jp}</p>
+                        <p className="text-slate-700 whitespace-pre-wrap">{getSafeString(currentQuestion.explanation_jp)}</p>
                     </div>
                     
                     <button onClick={isFinished ? fetchExercise : handleNextQuestion} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition">

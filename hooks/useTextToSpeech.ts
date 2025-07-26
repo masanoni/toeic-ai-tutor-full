@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Custom error to distinguish intentional cancellation from other errors.
@@ -46,14 +45,46 @@ export const useTextToSpeech = () => {
                 let voice: SpeechSynthesisVoice | undefined;
                 const langPrefix = lang.split('-')[0];
 
-                // Prioritize specific, high-quality voices if available (especially for iOS)
+                // Prioritize specific, high-quality voices if available for better pronunciation.
                 if (lang === 'en-US') {
-                    voice = allVoices.find(v => v.name === 'Samantha' && v.lang === 'en-US');
+                    const preferredEnVoices = [
+                        // Premium macOS voice
+                        'Alex',
+                        // Modern Google voices (Chrome/Android)
+                        'Google US English',
+                        // Modern Microsoft voices (Windows/Edge)
+                        'Microsoft David - English (United States)', 
+                        'Microsoft Mark - English (United States)',
+                        'Microsoft Zira - English (United States)',
+                        // Standard Apple voices
+                        'Samantha',
+                    ];
+                    voice = allVoices.find(v => preferredEnVoices.includes(v.name) && v.lang === 'en-US');
+                } else if (lang === 'ja-JP') {
+                    const preferredJpVoices = [
+                        // Modern Google voice
+                        'Google 日本語',
+                        // Apple voices
+                        'Kyoko', // Standard
+                        'Otoya', // Enhanced
+                        // Modern Microsoft voices
+                        'Microsoft Haruka - Japanese (Japan)',
+                        'Microsoft Ayumi - Japanese (Japan)',
+                    ];
+                    voice = allVoices.find(v => preferredJpVoices.includes(v.name) && v.lang === 'ja-JP');
                 }
-
+                
+                // Fallback 1: Find a default voice for the exact language
+                if (!voice) {
+                    voice = allVoices.find(v => v.lang === lang && v.default);
+                }
+                
+                // Fallback 2: Find any voice for the exact language
                 if (!voice) {
                     voice = allVoices.find(v => v.lang === lang);
                 }
+                
+                // Fallback 3: Find any voice for the base language (e.g., 'en' for 'en-US')
                 if (!voice) {
                     voice = allVoices.find(v => v.lang.startsWith(langPrefix));
                 }
@@ -68,6 +99,10 @@ export const useTextToSpeech = () => {
                 } else {
                     console.warn(`No specific voice found for lang '${lang}'. Attempting to use browser default.`);
                 }
+                
+                // Slightly reduce rate for clarity, which helps with pronunciation for learners.
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
 
                 utterance.onstart = () => setIsSpeaking(true);
                 

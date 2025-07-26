@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Screen, Level, VocabCategory, VocabType, VocabDBItem, ListeningPart, PartOfSpeech } from './types';
 import { ALL_LEVELS, ALL_CATEGORIES, LISTENING_PARTS } from './constants';
@@ -15,13 +14,15 @@ import BasicGrammarMode from './screens/BasicGrammarMode';
 import GrammarCheckScreen from './screens/GrammarCheckScreen';
 import AdminScreen from './screens/AdminScreen';
 import UserManualScreen from './screens/UserManualScreen';
-import MockTestMode from './screens/MockTestMode';
 import CategorySelectionModal from './components/CategorySelectionModal';
 import ListeningPartSelectionModal from './components/ListeningPartSelectionModal';
+import ApiKeyModal from './components/ApiKeyModal';
 import { getVocabCount, addVocabularyItems, getExistingWords } from './db';
-import { generateVocabulary, setApiKey as setGeminiApiKey } from './services/geminiService';
+import { generateVocabulary, initializeAi } from './services/geminiService';
 import { useAudioUnlock } from './hooks/useAudioUnlock';
 import { INITIAL_VOCAB_DATA } from './data/initial-vocab.data';
+import InstallPwaInstructions from './components/InstallPwaInstructions';
+
 
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.Home);
@@ -30,7 +31,9 @@ export const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initStatus, setInitStatus] = useState('Initializing...');
   const [dbWordCount, setDbWordCount] = useState(0);
-  const [isApiKeySet, setIsApiKeySet] = useState(false);
+
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
 
   const [categoryModalTarget, setCategoryModalTarget] = useState<Screen | null>(null);
   const [isListeningPartModalVisible, setIsListeningPartModalVisible] = useState(false);
@@ -40,14 +43,6 @@ export const App: React.FC = () => {
   
   const { unlockAudio } = useAudioUnlock();
 
-  useEffect(() => {
-    const storedApiKey = localStorage.getItem('gemini-api-key');
-    if (storedApiKey) {
-        setGeminiApiKey(storedApiKey);
-        setIsApiKeySet(true);
-    }
-  }, []);
-
   const updateWordCount = useCallback(async () => {
     const count = await getVocabCount();
     setDbWordCount(count);
@@ -55,7 +50,7 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const setupDatabase = async () => {
+    const setup = async () => {
       setIsInitializing(true);
       setInitStatus('ローカルデータベースから語彙を読み込んでいます...');
       try {
@@ -67,23 +62,67 @@ export const App: React.FC = () => {
           count = await updateWordCount();
         }
         setInitStatus(`データベースの準備が完了しました。${count} 件の単語が読み込まれました。`);
+
+        const storedKey = localStorage.getItem('gemini-api-key');
+        if (storedKey) {
+            setApiKey(storedKey);
+            initializeAi(storedKey);
+        } else {
+            setIsApiKeyModalOpen(true);
+        }
+
       } catch (error) {
-          console.error('Failed to initialize database:', error);
-          setInitStatus('語彙データベースのセットアップ中にエラーが発生しました。ページを再読み込みしてください。');
+          console.error('Failed to initialize application:', error);
+          setInitStatus('アプリの初期化中にエラーが発生しました。ページを再読み込みしてください。');
       } finally {
         setIsInitializing(false);
       }
     };
-    setupDatabase();
+    setup();
   }, [updateWordCount]);
   
   const handleApiError = (error: unknown) => {
     if (error instanceof Error) {
-        alert(`APIエラーが発生しました: ${error.message}`);
+        if (error.message.includes("API key")) {
+             alert(`APIキーに問題があるようです。設定を確認してください。\nエラー: ${error.message}`);
+             setIsApiKeyModalOpen(true);
+        } else {
+            alert(`APIエラーが発生しました: ${error.message}`);
+        }
     } else {
         alert("不明なAPIエラーが発生しました。");
     }
   }
+
+  const handleSaveApiKey = (key: string) => {
+    if (!key || !key.trim()) {
+        alert("APIキーを入力してください。");
+        return;
+    }
+    localStorage.setItem('gemini-api-key', key);
+    setApiKey(key);
+    initializeAi(key);
+    setIsApiKeyModalOpen(false);
+    alert("APIキーを保存しました。AI機能が利用可能です。");
+  };
+
+  const handleClearApiKey = () => {
+    if (window.confirm("APIキーをクリアしますか？これによりAI機能が使用できなくなります。")) {
+        localStorage.removeItem('gemini-api-key');
+        setApiKey(null);
+        initializeAi(''); // Disable the service
+        alert("APIキーをクリアしました。");
+    }
+  };
+
+  const handleCloseApiKeyModal = () => {
+    if (apiKey) {
+        setIsApiKeyModalOpen(false);
+    } else {
+        alert("AI機能を利用するにはAPIキーの設定が必要です。");
+    }
+  };
+
 
   const handleGoHome = useCallback(() => {
     setCurrentScreen(Screen.Home);
@@ -174,11 +213,6 @@ export const App: React.FC = () => {
     setCurrentScreen(Screen.GrammarCheck);
   };
   
-  const handleStartMockTest = () => {
-    unlockAudio();
-    setCurrentScreen(Screen.MockTest);
-  }
-
   const handleStartListening = (level: Level) => {
     unlockAudio();
     setSelectedLevel(level);
@@ -209,6 +243,9 @@ export const App: React.FC = () => {
   };
 
   const renderScreen = () => {
+    const isDbReady = !isInitializing && dbWordCount > 0;
+    const isAiReady = !isInitializing && !!apiKey;
+    
     switch (currentScreen) {
       case Screen.Vocabulary:
         return <VocabularyMode level={selectedLevel} onGoHome={handleGoHome} />;
@@ -225,9 +262,7 @@ export const App: React.FC = () => {
         return <Part5Mode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} onApiError={handleApiError} />;
       case Screen.Part6:
         return <Part6Mode level={selectedLevel} onGoHome={handleGoHome} initialCategory={selectedInitialCategory} onApiError={handleApiError} />;
-       case Screen.MockTest:
-        return <MockTestMode onGoHome={handleGoHome} onApiError={handleApiError} />;
-      case Screen.WordList:
+       case Screen.WordList:
         return <WordListScreen onGoHome={handleGoHome} onApiError={handleApiError} />;
       case Screen.BasicGrammar:
         return <BasicGrammarMode onGoHome={handleGoHome} onApiError={handleApiError} />;
@@ -240,7 +275,6 @@ export const App: React.FC = () => {
             dbWordCount={dbWordCount}
             isInitializing={isInitializing}
             initStatus={initStatus}
-            isApiKeySet={isApiKeySet}
             onViewWordList={handleViewWordList}
             onImportJson={updateWordCount}
         />;
@@ -258,16 +292,16 @@ export const App: React.FC = () => {
             onStartPart6={handleStartPart6}
             onStartBasicGrammar={handleStartBasicGrammar}
             onStartGrammarCheck={handleStartGrammarCheck}
-            onStartMockTest={handleStartMockTest}
             onGoToAdmin={handleGoToAdmin}
             dbWordCount={dbWordCount}
             isInitializing={isInitializing}
             initStatus={initStatus}
-            isApiKeySet={isApiKeySet}
-            onApiKeyUpdate={setIsApiKeySet}
             onViewWordList={handleViewWordList}
             onImportJson={updateWordCount}
             onGoToUserManual={handleGoToUserManual}
+            isDbReady={isDbReady}
+            isAiReady={isAiReady}
+            onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
           />
         );
     }
@@ -275,6 +309,13 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans flex flex-col items-center p-4">
+      <ApiKeyModal
+          isOpen={isApiKeyModalOpen}
+          onClose={handleCloseApiKeyModal}
+          onSave={handleSaveApiKey}
+          onClear={handleClearApiKey}
+          apiKeyExists={!!apiKey}
+      />
       {isListeningPartModalVisible && (
         <ListeningPartSelectionModal 
             onSelectPart={handleListeningPartSelected}
@@ -290,6 +331,7 @@ export const App: React.FC = () => {
       <main key={currentScreen} className="w-full max-w-4xl mx-auto">
         {renderScreen()}
       </main>
+      <InstallPwaInstructions />
     </div>
   );
 };

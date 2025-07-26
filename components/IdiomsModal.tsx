@@ -12,6 +12,16 @@ interface IdiomsModalProps {
   onClose: () => void;
 }
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
 const IdiomsModal: React.FC<IdiomsModalProps> = ({ idioms, isOpen, onClose }) => {
   const { speak, stop, isSpeaking } = useTextToSpeech();
 
@@ -42,14 +52,14 @@ const IdiomsModal: React.FC<IdiomsModalProps> = ({ idioms, isOpen, onClose }) =>
               <div key={index} className="p-4 border rounded-lg bg-slate-50">
                   <div className="flex justify-between items-center">
                       <div>
-                          <p className="text-lg font-semibold text-slate-800">{idiom.english}</p>
-                          <p className="text-md text-slate-600">{idiom.japanese}</p>
+                          <p className="text-lg font-semibold text-slate-800">{getSafeString(idiom.english)}</p>
+                          <p className="text-md text-slate-600">{getSafeString(idiom.japanese)}</p>
                       </div>
                       <div className="flex gap-2">
-                          <button onClick={() => handlePlay(idiom.english, 'en-US')} className="text-blue-500 hover:text-blue-700 disabled:text-slate-400" disabled={isSpeaking}>
+                          <button onClick={() => handlePlay(getSafeString(idiom.english), 'en-US')} className="text-blue-500 hover:text-blue-700 disabled:text-slate-400" disabled={isSpeaking}>
                               <SoundIcon className="w-6 h-6"/>
                           </button>
-                          <button onClick={() => handlePlay(idiom.japanese, 'ja-JP')} className="text-green-500 hover:text-green-700 disabled:text-slate-400" disabled={isSpeaking}>
+                          <button onClick={() => handlePlay(getSafeString(idiom.japanese), 'ja-JP')} className="text-green-500 hover:text-green-700 disabled:text-slate-400" disabled={isSpeaking}>
                               <SoundIcon className="w-6 h-6"/>
                           </button>
                       </div>

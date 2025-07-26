@@ -11,6 +11,16 @@ interface WordListScreenProps {
   onApiError: (error: unknown) => void;
 }
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
 const WordListScreen: React.FC<WordListScreenProps> = ({ onGoHome, onApiError }) => {
   const [items, setItems] = useState<VocabDBItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -288,19 +298,19 @@ const WordListScreen: React.FC<WordListScreenProps> = ({ onGoHome, onApiError })
                           {items.map(item => (
                               <tr key={item.id}>
                                   <td className="px-6 py-4 whitespace-normal">
-                                      <div className="text-sm font-medium text-slate-900">{item.english}</div>
-                                      <div className="text-sm text-slate-500 hidden sm:block">{item.example_en}</div>
+                                      <div className="text-sm font-medium text-slate-900">{getSafeString(item.english)}</div>
+                                      <div className="text-sm text-slate-500 hidden sm:block">{getSafeString(item.example_en)}</div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-normal">
-                                       <div className="text-sm text-slate-900">{item.japanese}</div>
-                                       <div className="text-sm text-slate-500 hidden sm:block">{item.example_jp}</div>
+                                       <div className="text-sm text-slate-900">{getSafeString(item.japanese)}</div>
+                                       <div className="text-sm text-slate-500 hidden sm:block">{getSafeString(item.example_jp)}</div>
                                   </td>
 
                                   <td className="px-4 py-4 whitespace-normal hidden md:table-cell">
                                       <div className="flex flex-col gap-1 items-start">
-                                        <span className={`capitalize text-xs font-semibold py-1 px-2 rounded-full ${item.type === 'idiom' ? 'bg-purple-200 text-purple-800' : 'bg-green-200 text-green-800'}`}>{item.type}</span>
-                                        {item.pos && <span className="capitalize text-xs font-semibold py-1 px-2 rounded-full bg-blue-200 text-blue-800">{item.pos}</span>}
-                                        <span className="text-xs text-slate-500 py-1 px-2">{item.level}</span>
+                                        <span className={`capitalize text-xs font-semibold py-1 px-2 rounded-full ${item.type === 'idiom' ? 'bg-purple-200 text-purple-800' : 'bg-green-200 text-green-800'}`}>{getSafeString(item.type)}</span>
+                                        {item.pos && <span className="capitalize text-xs font-semibold py-1 px-2 rounded-full bg-blue-200 text-blue-800">{getSafeString(item.pos)}</span>}
+                                        <span className="text-xs text-slate-500 py-1 px-2">{getSafeString(item.level)}</span>
                                       </div>
                                   </td>
                                   <td className="px-4 py-4 whitespace-nowrap text-lg text-center hidden lg:table-cell">

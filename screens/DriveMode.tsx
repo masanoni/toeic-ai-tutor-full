@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Level, VocabCategory, VocabDBItem, VocabType, PartOfSpeech, SortOrder } from '../types';
 import { VOCAB_CATEGORIES, LEVELS, PARTS_OF_SPEECH, GENERATOR_CATEGORIES, ALL_CATEGORIES } from '../constants';
@@ -17,6 +18,16 @@ interface DriveModeProps {
 type PlayingPart = 'english' | 'japanese' | 'example_en' | 'example_jp' | null;
 type VocabSelection = VocabType | 'all';
 type PlayState = 'playing' | 'paused';
+
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
 
 const DriveMode: React.FC<DriveModeProps> = ({ level, onGoHome }) => {
   const [currentLevel, setCurrentLevel] = useState<Level>(level);
@@ -116,28 +127,28 @@ const DriveMode: React.FC<DriveModeProps> = ({ level, onGoHome }) => {
         if (isCancelled) return;
         
         setPlayingPart('english');
-        await speak(item.english, 'en-US');
+        await speak(getSafeString(item.english), 'en-US');
         if (isCancelled) return;
         
         await new Promise(r => setTimeout(r, 2000));
         if (isCancelled) return;
         
         setPlayingPart('japanese');
-        await speak(item.japanese, 'ja-JP');
+        await speak(getSafeString(item.japanese), 'ja-JP');
         if (isCancelled) return;
         
         await new Promise(r => setTimeout(r, 2000));
         if (isCancelled) return;
         
         setPlayingPart('example_en');
-        await speak(item.example_en, 'en-US');
+        await speak(getSafeString(item.example_en), 'en-US');
         if (isCancelled) return;
         
         await new Promise(r => setTimeout(r, 2000));
         if (isCancelled) return;
         
         setPlayingPart('example_jp');
-        await speak(item.example_jp, 'ja-JP');
+        await speak(getSafeString(item.example_jp), 'ja-JP');
         if (isCancelled) return;
         
         // End of sequence, auto-advance to the next item
@@ -184,11 +195,11 @@ const DriveMode: React.FC<DriveModeProps> = ({ level, onGoHome }) => {
                         <span className={`capitalize text-xs font-semibold py-1 px-2 rounded-full ${currentItem.type === 'idiom' ? 'bg-purple-200 text-purple-800' : 'bg-green-200 text-green-800'}`}>{currentItem.type}</span>
                    </div>
               </div>
-              <TextLine text={currentItem.english} highlight={playingPart === 'english'} sizeClass="text-2xl md:text-3xl font-bold" />
-              <TextLine text={currentItem.japanese} highlight={playingPart === 'japanese'} sizeClass="text-xl md:text-2xl" />
+              <TextLine text={getSafeString(currentItem.english)} highlight={playingPart === 'english'} sizeClass="text-2xl md:text-3xl font-bold" />
+              <TextLine text={getSafeString(currentItem.japanese)} highlight={playingPart === 'japanese'} sizeClass="text-xl md:text-2xl" />
               <hr className="my-2 border-slate-200"/>
-              <TextLine text={currentItem.example_en} highlight={playingPart === 'example_en'} sizeClass="text-lg" />
-              <TextLine text={currentItem.example_jp} highlight={playingPart === 'example_jp'} sizeClass="text-base text-slate-600" />
+              <TextLine text={getSafeString(currentItem.example_en)} highlight={playingPart === 'example_en'} sizeClass="text-lg" />
+              <TextLine text={getSafeString(currentItem.example_jp)} highlight={playingPart === 'example_jp'} sizeClass="text-base text-slate-600" />
           </div>
       );
   }

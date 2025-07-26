@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback } from 'react';
 import { GrammarCheckResult } from '../types';
 import { checkGrammar } from '../services/geminiService';
@@ -10,6 +9,16 @@ interface GrammarCheckScreenProps {
   onGoHome: () => void;
   onApiError: (error: unknown) => void;
 }
+
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
 
 const GrammarCheckScreen: React.FC<GrammarCheckScreenProps> = ({ onGoHome, onApiError }) => {
   const [inputText, setInputText] = useState('');
@@ -90,18 +99,18 @@ const GrammarCheckScreen: React.FC<GrammarCheckScreenProps> = ({ onGoHome, onApi
           <div className="mt-8 border-t border-slate-200 pt-6 space-y-4">
               <div>
                   <h3 className="text-sm font-semibold text-slate-500 mb-1">元の文章</h3>
-                  <p className="p-3 bg-slate-100 rounded-md text-slate-700">{result.originalSentence}</p>
+                  <p className="p-3 bg-slate-100 rounded-md text-slate-700">{getSafeString(result.originalSentence)}</p>
               </div>
                <div>
                   <h3 className={`text-sm font-semibold mb-1 ${isCorrect ? 'text-green-600' : 'text-orange-600'}`}>
                     {isCorrect ? '正しい文章' : '修正後の文章'}
                   </h3>
-                  <p className={`p-3 rounded-md ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>{result.correctedSentence}</p>
+                  <p className={`p-3 rounded-md ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>{getSafeString(result.correctedSentence)}</p>
               </div>
                <div>
                   <h3 className="text-sm font-semibold text-slate-500 mb-1">AIの解説</h3>
                   <div className="p-3 bg-blue-50 rounded-md text-blue-900 border border-blue-200 whitespace-pre-wrap leading-relaxed">
-                      {result.explanation_jp}
+                      {getSafeString(result.explanation_jp)}
                   </div>
               </div>
           </div>

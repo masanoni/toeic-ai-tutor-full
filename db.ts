@@ -1,7 +1,7 @@
 
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { VocabDBItem, Level, VocabCategory, VocabType, PartOfSpeech, SortOrder, MockTest } from './types';
+import type { VocabDBItem, Level, VocabCategory, VocabType, PartOfSpeech, SortOrder } from './types';
 import { ALL_LEVELS, ALL_CATEGORIES, PARTS_OF_SPEECH } from './constants';
 
 
@@ -9,7 +9,6 @@ const DB_NAME = 'TOEICAI_TUTOR_DB';
 const DB_VERSION = 7; 
 const WORDS_STORE_NAME = 'words';
 const IDIOMS_STORE_NAME = 'idioms';
-const MOCK_TESTS_STORE_NAME = 'mockTests';
 const OLD_VOCAB_STORE_NAME = 'vocabulary';
 
 
@@ -31,11 +30,6 @@ interface TOEICDB extends DBSchema {
       'level_category': [Level, VocabCategory];
       'frequencyLevel': number;
     };
-  };
-   [MOCK_TESTS_STORE_NAME]: {
-    key: number;
-    value: MockTest;
-    indexes: { 'createdAt': number; 'status': string; };
   };
   // For migration purposes, the old store might exist temporarily
   [OLD_VOCAB_STORE_NAME]?: {
@@ -104,24 +98,16 @@ const getDb = (): Promise<IDBPDatabase<TOEICDB>> => {
                         idiomsStore.createIndex('frequencyLevel', 'frequencyLevel', { unique: false });
                     }
                 }
-                if (oldVersion < 6) {
-                    console.log("Applying version 6 upgrade: Adding mockTests store.");
-                    if (!db.objectStoreNames.contains(MOCK_TESTS_STORE_NAME)) {
-                        const store = db.createObjectStore(MOCK_TESTS_STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                        store.createIndex('createdAt', 'createdAt', { unique: false });
-                    }
-                }
-                if (oldVersion < 7) {
-                    console.log("Applying version 7 upgrade: Adding status index to mockTests store.");
-                    const store = tx.objectStore(MOCK_TESTS_STORE_NAME);
-                    if (!store.indexNames.contains('status')) {
-                        store.createIndex('status', 'status', { unique: false });
-                    }
-                }
             },
         });
     }
     return dbPromise;
+};
+
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') return value;
+    if (value === null || value === undefined) return '';
+    return String(value);
 };
 
 export const addVocabularyItems = async (items: VocabDBItem[]): Promise<number> => {
@@ -134,8 +120,16 @@ export const addVocabularyItems = async (items: VocabDBItem[]): Promise<number> 
     let addedCount = 0;
 
     try {
-        for (const item of items) {
-             if (!item || typeof item.english !== 'string' || !item.english || !item.type) {
+        for (const rawItem of items) {
+             const item = {
+                ...rawItem,
+                english: getSafeString(rawItem.english),
+                japanese: getSafeString(rawItem.japanese),
+                example_en: getSafeString(rawItem.example_en),
+                example_jp: getSafeString(rawItem.example_jp),
+             };
+
+             if (!item.english || !item.type) {
                 console.warn('Skipping item with invalid base properties (english/type):', item);
                 continue;
             }
@@ -378,34 +372,4 @@ export const updateFrequencyLevels = async (updates: { id: number; type: VocabTy
     }));
     
     await tx.done;
-};
-
-// --- Mock Test DB Functions ---
-
-export const addMockTest = async (test: Omit<MockTest, 'id'>): Promise<number> => {
-    const db = await getDb();
-    return db.add(MOCK_TESTS_STORE_NAME, test as MockTest);
-};
-
-export const getAllMockTests = async (): Promise<MockTest[]> => {
-    const db = await getDb();
-    return db.getAllFromIndex(MOCK_TESTS_STORE_NAME, 'createdAt');
-};
-
-export const getMockTest = async (id: number): Promise<MockTest | undefined> => {
-    const db = await getDb();
-    return db.get(MOCK_TESTS_STORE_NAME, id);
-};
-
-export const updateMockTest = async (test: MockTest): Promise<void> => {
-    if (!test.id) {
-        throw new Error("Cannot update a mock test without an ID.");
-    }
-    const db = await getDb();
-    await db.put(MOCK_TESTS_STORE_NAME, test);
-};
-
-export const deleteMockTest = async (id: number): Promise<void> => {
-    const db = await getDb();
-    await db.delete(MOCK_TESTS_STORE_NAME, id);
 };

@@ -10,6 +10,16 @@ interface ScriptModalProps {
   onClose: () => void;
 }
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
 const ScriptModal: React.FC<ScriptModalProps> = ({ passage, title, onClose }) => {
   return (
     <div 
@@ -21,7 +31,7 @@ const ScriptModal: React.FC<ScriptModalProps> = ({ passage, title, onClose }) =>
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-4 border-b border-slate-200 flex-shrink-0">
-          <h2 className="text-xl font-bold text-slate-800">{title} - 全文スクリプト</h2>
+          <h2 className="text-xl font-bold text-slate-800">{getSafeString(title)} - 全文スクリプト</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-800">
             <CloseIcon className="w-7 h-7" />
           </button>
@@ -29,8 +39,8 @@ const ScriptModal: React.FC<ScriptModalProps> = ({ passage, title, onClose }) =>
         <div className="p-6 overflow-y-auto space-y-4">
           {passage.map((sentence, i) => (
             <div key={i} className="p-3 bg-slate-50 rounded-lg">
-              <p className="text-slate-800 font-medium leading-relaxed">{sentence.english}</p>
-              <p className="text-slate-500 mt-1 leading-relaxed">{sentence.japanese}</p>
+              <p className="text-slate-800 font-medium leading-relaxed">{getSafeString(sentence.english)}</p>
+              <p className="text-slate-500 mt-1 leading-relaxed">{getSafeString(sentence.japanese)}</p>
             </div>
           ))}
         </div>

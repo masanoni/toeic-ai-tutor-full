@@ -27,6 +27,16 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   return newArray;
 };
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
 const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
   const [category, setCategory] = useState<VocabCategory>(VocabCategory.Business);
   const [vocabList, setVocabList] = useState<VocabDBItem[]>([]);
@@ -124,13 +134,13 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
   const playSequence = useCallback(async () => {
       if (!currentItem) return;
       try {
-        await speak(currentItem.english, 'en-US');
+        await speak(getSafeString(currentItem.english), 'en-US');
         await new Promise(r => setTimeout(r, 500));
-        await speak(currentItem.japanese, 'ja-JP');
+        await speak(getSafeString(currentItem.japanese), 'ja-JP');
         await new Promise(r => setTimeout(r, 500));
-        await speak(currentItem.example_en, 'en-US');
+        await speak(getSafeString(currentItem.example_en), 'en-US');
         await new Promise(r => setTimeout(r, 500));
-        await speak(currentItem.example_jp, 'ja-JP');
+        await speak(getSafeString(currentItem.example_jp), 'ja-JP');
       } catch (error) {
         if (error instanceof SpeechCancellationError) {
           console.log('Speech sequence cancelled.');
@@ -142,7 +152,7 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
 
   const checkAnswer = async () => {
     if (!currentItem) return;
-    const isCorrect = userInput.trim().toLowerCase() === currentItem.english.toLowerCase();
+    const isCorrect = userInput.trim().toLowerCase() === getSafeString(currentItem.english).toLowerCase();
     setFeedback(isCorrect ? 'correct' : 'incorrect');
     if (isCorrect) {
         updateLearnedStatus(currentItem.id!, true);
@@ -249,8 +259,8 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
     if (!currentItem || quizOptions.length === 0) return <LoadingSpinner />;
     
     const isEnToJp = studyMode === 'en-jp-quiz';
-    const questionText = isEnToJp ? currentItem.english : currentItem.japanese;
-    const getOptionText = (item: VocabDBItem) => isEnToJp ? item.japanese : item.english;
+    const questionText = isEnToJp ? getSafeString(currentItem.english) : getSafeString(currentItem.japanese);
+    const getOptionText = (item: VocabDBItem) => isEnToJp ? getSafeString(item.japanese) : getSafeString(item.english);
     
     return (
       <div className="w-full bg-white p-6 rounded-2xl shadow-xl transition-all duration-500">
@@ -286,8 +296,8 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
         </div>
         {feedback !== 'idle' && (
             <div className="mt-4 text-center p-4 rounded-lg bg-slate-50">
-                <p className="text-lg font-bold">{currentItem.english}</p>
-                <p className="text-md text-slate-600">{currentItem.japanese}</p>
+                <p className="text-lg font-bold">{getSafeString(currentItem.english)}</p>
+                <p className="text-md text-slate-600">{getSafeString(currentItem.japanese)}</p>
                 <div className="mt-3 flex justify-center gap-4">
                     <button onClick={() => updateLearnedStatus(currentItem.id!, true)} className={`px-3 py-1 text-sm rounded-full ${sessionLearnedIds.has(currentItem.id!) ? 'bg-green-600 text-white' : 'bg-green-200 text-green-800'}`}>覚えた 👍</button>
                     <button onClick={() => updateLearnedStatus(currentItem.id!, false)} className={`px-3 py-1 text-sm rounded-full ${sessionReviewIds.has(currentItem.id!) ? 'bg-red-600 text-white' : 'bg-red-200 text-red-800'}`}>要復習 👎</button>
@@ -346,19 +356,19 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
            
             {studyMode === 'listening' ? (
                 <div className="text-center">
-                    <h2 className="text-4xl font-bold mb-2">{currentItem.english}</h2>
-                    <p className="text-2xl text-slate-600 mb-6">{currentItem.japanese}</p>
-                    <p className="text-xl text-slate-800 mb-2">"{currentItem.example_en}"</p>
-                    <p className="text-lg text-slate-500 mb-8">{currentItem.example_jp}</p>
+                    <h2 className="text-4xl font-bold mb-2">{getSafeString(currentItem.english)}</h2>
+                    <p className="text-2xl text-slate-600 mb-6">{getSafeString(currentItem.japanese)}</p>
+                    <p className="text-xl text-slate-800 mb-2">"{getSafeString(currentItem.example_en)}"</p>
+                    <p className="text-lg text-slate-500 mb-8">{getSafeString(currentItem.example_jp)}</p>
                     <button onClick={() => playSequence()} disabled={isSpeaking} className="bg-blue-500 text-white rounded-full p-4 hover:bg-blue-600 transition disabled:bg-slate-300">
                         <SoundIcon className="w-8 h-8"/>
                     </button>
                 </div>
             ) : (
                 <div className="text-center">
-                    <p className="text-2xl text-slate-600 mb-4">{currentItem.japanese}</p>
-                    <p className="text-lg text-slate-500 mb-6">{currentItem.example_jp}</p>
-                     <button onClick={() => speak(currentItem.example_en, 'en-US').catch(error => { if (!(error instanceof SpeechCancellationError)) { console.error('Speech error:', error); } })} disabled={isSpeaking} className="mb-4 text-blue-500 hover:text-blue-700 flex items-center gap-2 mx-auto disabled:text-slate-400">
+                    <p className="text-2xl text-slate-600 mb-4">{getSafeString(currentItem.japanese)}</p>
+                    <p className="text-lg text-slate-500 mb-6">{getSafeString(currentItem.example_jp)}</p>
+                     <button onClick={() => speak(getSafeString(currentItem.example_en), 'en-US').catch(error => { if (!(error instanceof SpeechCancellationError)) { console.error('Speech error:', error); } })} disabled={isSpeaking} className="mb-4 text-blue-500 hover:text-blue-700 flex items-center gap-2 mx-auto disabled:text-slate-400">
                         <SoundIcon className="w-5 h-5"/> 例文を聞く
                     </button>
                     <form onSubmit={handleWritingSubmit} className="flex flex-col items-center gap-4">
@@ -378,7 +388,7 @@ const VocabularyMode: React.FC<VocabularyModeProps> = ({ level, onGoHome }) => {
                         </button>
                     </form>
                     {feedback === 'incorrect' && (
-                        <button onClick={() => setUserInput(currentItem.english)} className="mt-4 text-sm text-slate-500 hover:text-slate-700">答えを表示</button>
+                        <button onClick={() => setUserInput(getSafeString(currentItem.english))} className="mt-4 text-sm text-slate-500 hover:text-slate-700">答えを表示</button>
                     )}
                 </div>
             )}

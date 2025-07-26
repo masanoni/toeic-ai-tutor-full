@@ -11,6 +11,16 @@ interface BasicGrammarModeProps {
 
 type Phase = 'selecting' | 'learning' | 'quizzing' | 'results';
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
 const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome, onApiError }) => {
   const [phase, setPhase] = useState<Phase>('selecting');
   
@@ -238,13 +248,13 @@ const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome, onApiErro
 
   const renderLearning = () => (
     <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full">
-      <h2 className="text-3xl font-bold text-slate-800 mb-4">{learningTopic}</h2>
+      <h2 className="text-3xl font-bold text-slate-800 mb-4">{getSafeString(learningTopic)}</h2>
       {isLoading && <LoadingSpinner />}
-      {error && <p className="text-red-500 bg-red-100 p-4 rounded-lg">{error}</p>}
+      {error && <p className="text-red-500 bg-red-100 p-4 rounded-lg">{getSafeString(error)}</p>}
       {explanation && (
         <>
           <div className="max-h-[50vh] overflow-y-auto pr-4 mb-6">
-            <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{explanation}</p>
+            <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{getSafeString(explanation)}</p>
           </div>
           <button onClick={handleStartQuizAfterLearning} className="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition text-lg">
             理解度チェッククイズに進む
@@ -262,8 +272,8 @@ const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome, onApiErro
       return (
         <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full">
             <p className="text-sm text-slate-500 mb-2 text-right">Question {currentQuizIndex + 1} / {quiz?.length}</p>
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">{question.question_jp}</h3>
-            <p className="text-xl font-medium text-slate-800 mb-6 bg-slate-100 p-4 rounded-md">{question.sentence_with_blank}</p>
+            <h3 className="text-lg font-semibold text-slate-700 mb-2">{getSafeString(question.question_jp)}</h3>
+            <p className="text-xl font-medium text-slate-800 mb-6 bg-slate-100 p-4 rounded-md">{getSafeString(question.sentence_with_blank)}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {question.options.map((option, index) => {
                      const isSelected = userAnswer === index;
@@ -276,14 +286,14 @@ const BasicGrammarMode: React.FC<BasicGrammarModeProps> = ({ onGoHome, onApiErro
                      } else { // Not answered yet
                         buttonClass += 'bg-white border-slate-300 hover:bg-blue-50 hover:border-blue-400';
                      }
-                    return <button key={index} onClick={() => handleAnswerQuiz(index)} disabled={userAnswer !== null} className={buttonClass}>({String.fromCharCode(65 + index)}) {option}</button>;
+                    return <button key={index} onClick={() => handleAnswerQuiz(index)} disabled={userAnswer !== null} className={buttonClass}>({String.fromCharCode(65 + index)}) {getSafeString(option)}</button>;
                 })}
             </div>
             {userAnswer !== null && (
                 <>
                     <div className="w-full mt-6 p-4 rounded-lg bg-slate-50 border border-slate-200">
                         <p className="font-bold text-slate-700">解説:</p>
-                        <p className="text-slate-700 whitespace-pre-wrap">{question.explanation_jp}</p>
+                        <p className="text-slate-700 whitespace-pre-wrap">{getSafeString(question.explanation_jp)}</p>
                     </div>
                     <button 
                         onClick={handleNextQuestion}

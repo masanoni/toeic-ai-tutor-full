@@ -15,6 +15,16 @@ interface Part5ModeProps {
 
 type GameState = 'loading' | 'answering' | 'answered';
 
+const getSafeString = (value: any): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value);
+};
+
 const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level, onApiError }) => {
   const [exercise, setExercise] = useState<IncompleteSentenceExercise | null>(null);
   const [gameState, setGameState] = useState<GameState>('loading');
@@ -64,14 +74,15 @@ const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level,
 
     const isCorrect = selectedAnswerIndex === exercise.correctOptionIndex;
     
-    const sentenceWithAnswer = exercise.sentence_with_blank.replace('____', `[ ${exercise.options[exercise.correctOptionIndex]} ]`);
+    const correctAnswerText = getSafeString(exercise.options[exercise.correctOptionIndex]);
+    const sentenceWithAnswer = getSafeString(exercise.sentence_with_blank).replace('____', `[ ${correctAnswerText} ]`);
 
     return (
         <div className="w-full bg-white p-6 md:p-8 rounded-2xl shadow-xl flex flex-col items-center">
             <p className="text-lg md:text-xl font-medium text-slate-700 mb-6 text-center leading-relaxed">
                 {gameState === 'answered' 
                     ? <span className="p-1 bg-yellow-100 rounded">{sentenceWithAnswer}</span>
-                    : exercise.sentence_with_blank
+                    : getSafeString(exercise.sentence_with_blank)
                 }
             </p>
             
@@ -93,7 +104,7 @@ const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level,
 
                     return (
                         <button key={index} onClick={() => handleSelectAnswer(index)} disabled={gameState === 'answered'} className={buttonClass}>
-                           ({String.fromCharCode(65 + index)}) {option}
+                           ({String.fromCharCode(65 + index)}) {getSafeString(option)}
                         </button>
                     );
                 })}
@@ -104,7 +115,7 @@ const Part5Mode: React.FC<Part5ModeProps> = ({ onGoHome, initialCategory, level,
                     <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
                         <h3 className={`text-xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>{isCorrect ? "正解" : "不正解"}</h3>
                         <p className="font-bold text-slate-700 mt-3">解説:</p>
-                        <p className="text-slate-700 whitespace-pre-wrap">{exercise.explanation_jp}</p>
+                        <p className="text-slate-700 whitespace-pre-wrap">{getSafeString(exercise.explanation_jp)}</p>
                     </div>
                     
                     <button onClick={fetchExercise} className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition">
